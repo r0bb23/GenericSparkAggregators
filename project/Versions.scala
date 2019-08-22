@@ -1,0 +1,16 @@
+object Versions {
+    val gsaggsVer = "0.0.1"
+    val assemblyVer = "0.14.3"
+    val scalaFmtVer = "2.0.3"
+    val scalaVer = "2.11"
+    val scalariformVer = "1.2.0"
+    val scalastyleVer = "0.6.0"
+    val breezeVer = "1.0"
+    val tdigestVer = "3.2"
+    val yahooSketches = "0.13.4"
+    val sparkVer = "2.4.3"
+    val scalaTestVer = "2.2.1"
+    val algebirdVer = "0.13.5"
+    val stringmetricVer = "0.27.4"
+    val s2GeometryVer = "1.0.1"
+}
