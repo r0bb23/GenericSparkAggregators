@@ -1,21 +1,14 @@
-import Dependencies.{ generalDeps, sparkDeps, analyticsDeps, testDeps }
-import Versions.{ gsaggsVer, scalaVer }
 import scala.sys.process.Process
 
 lazy val commonSettings: Seq[Def.Setting[_]] = Defaults.coreDefaultSettings ++ Seq(
   organization := "com.rbb",
-  version := gsaggsVer,
-  scalaVersion in ThisBuild := scalaVer,
+  version := Versions.gsaggsVer,
+  scalaVersion in ThisBuild := Versions.scalaVer,
   resolvers ++= Dependencies.repos,
   credentials += Credentials(Path.userHome / ".sbt" / ".credentials"),
-  dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value,
+  dependencyOverrides += "org.scala-lang" % "scala-library" % Versions.scalaVer,
   parallelExecution in Test := false,
   scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature"),
-  javaOptions in Test ++= Seq(
-    "-Dspark.serializer=org.apache.spark.serializer.KryoSerializer",
-    "-Dspark.kryo.registrationRequired=true",
-    "-Dspark.kryo.registrator=com.rbb.genericsparkaggregators.RbbKryoRegistrator"
-  ),
   ivyXML :=
     <dependencies>
     <exclude module="jms"/>
@@ -35,9 +28,8 @@ lazy val root = (project in file("."))
   .settings(
     commonSettings,
     rootSettings,
-    Assembly.settings,
-    name := "report-analyses",
-    libraryDependencies ++= generalDeps ++ sparkDeps ++ analyticsDeps ++ testDeps,
+    name := "generic-spark-aggregators",
+    libraryDependencies ++= Dependencies.generalDeps ++ Dependencies.sparkDeps ++ Dependencies.analyticsDeps,
     test in assembly := {},
     fork in Test := true,
     // Full stack traces + timings
@@ -76,13 +68,12 @@ lazy val root = (project in file("."))
         (Process("hostname")!!).stripLineEnd
       }
     ),
-    // Can import as 'com.rbb.genericsparkaggregators.BuildInfo'
-    buildInfoPackage := "com.rbb.genericsparkaggregators"
+    // Can import as 'com.rbb.gsaggs.BuildInfo'
+    buildInfoPackage := "com.rbb.gsaggs"
 )
 
+val parentPath = file(".").getAbsoluteFile.getParentFile
 lazy val assemblyJarPath = s"${parentPath}/commands/spark/"
-lazy val assemblyJarFilename = s"gsaggs_2.11-${gsaggsVer}.jar"
+lazy val assemblyJarFilename = s"gsaggs_2.11-${Versions.gsaggsVer}.jar"
 
 assemblyOutputPath in assembly := file(assemblyJarPath + assemblyJarFilename)
-
-publishTo := Some(Resolver.file("file",  new File(mavenRepo)))

@@ -1,4 +1,5 @@
 import Versions._
+import sbt._
 
 object Dependencies {
     val sparkDeps = Seq(
@@ -17,5 +18,10 @@ object Dependencies {
         "com.twitter" %% "algebird-core" % algebirdVer,
         "com.rockymadden.stringmetric" %% "stringmetric-core" % stringmetricVer,
         "io.sgr" % "s2-geometry-library-java" % s2GeometryVer,
+    )
+    
+    val repos = Seq(
+        "Typesafe" at "http://repo.typesafe.com/typesafe/releases/",
+        "Java.net Maven2 Repository" at "http://download.java.net/maven/2/"
     )
 }

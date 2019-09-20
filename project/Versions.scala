@@ -2,7 +2,7 @@ object Versions {
     val gsaggsVer = "0.0.1"
     val assemblyVer = "0.14.3"
     val scalaFmtVer = "2.0.3"
-    val scalaVer = "2.11"
+    val scalaVer = "2.11.8"
     val scalariformVer = "1.2.0"
     val scalastyleVer = "0.6.0"
     val breezeVer = "1.0"
