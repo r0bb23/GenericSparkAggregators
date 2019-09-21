@@ -1,7 +1,7 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import com.holdenkarau.spark.testing.DataFrameSuiteBase
-import com.rbb.genericsparkaggregators.CaseClasses.HistogramAndPercentiles
+import com.rbb.gsaggs.CaseClasses.HistogramAndPercentiles
 import com.mozilla.spark.sql.hyperloglog.aggregates._
 import com.mozilla.spark.sql.hyperloglog.functions._
 import org.apache.spark.SparkException

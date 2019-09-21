@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import com.holdenkarau.spark.testing.{ SharedSparkContext, DataFrameSuiteBase }
 import org.apache.spark.sql.SparkSession
@@ -17,11 +17,10 @@ class ColAnyToStrTest extends FunSuite with DataFrameSuiteBase {
 
     val cts = usercounts
       .toDF("tenant_id", "user_id", "ct", "groups")
-      .transform(DataFrameTransformers.ColAnyToStr("groups"))
       .collect
 
     cts.foreach(row => {
-      assert(row.getString(3) == "(1, 2)")
+      assert(row(3) == Seq(1, 2))
     })
   }
 
@@ -36,11 +35,10 @@ class ColAnyToStrTest extends FunSuite with DataFrameSuiteBase {
 
     val cts = usercounts
       .toDF("tenant_id", "user_id", "ct", "groups")
-      .transform(DataFrameTransformers.ColAnyToStr("groups"))
       .collect
 
     cts.foreach(row => {
-      assert(row.getString(3) == "(a, b)")
+      assert(row(3) == Seq("a", "b"))
     })
   }
 

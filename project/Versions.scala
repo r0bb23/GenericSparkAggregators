@@ -13,4 +13,5 @@ object Versions {
     val algebirdVer = "0.13.5"
     val stringmetricVer = "0.27.4"
     val s2GeometryVer = "1.0.1"
+    val hyperloglogVer = "2.2.0"
 }

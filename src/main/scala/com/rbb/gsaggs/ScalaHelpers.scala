@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream }
 import java.security.MessageDigest

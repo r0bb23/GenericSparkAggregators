@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{ format_string, col, hash, udf, spark_partition_id }

@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 object Exceptions {
   case class NotValidType(

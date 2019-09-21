@@ -1,9 +1,9 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
-import com.rbb.genericsparkaggregatorsgators.CaseClasses.{ FreqSketch, HistogramAndPercentiles, IntermediateStddevStats, StddevStats }
-import com.rbb.genericsparkaggregatorsgators.Exceptions.NotValidValue
-import com.rbb.genericsparkaggregatorsgators.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
-import com.rbb.genericsparkaggregatorsgators.SparkDataFrameHelpers.getNestedRowValue
+import com.rbb.gsaggs.CaseClasses.{ FreqSketch, HistogramAndPercentiles, IntermediateStddevStats, StddevStats }
+import com.rbb.gsaggs.Exceptions.NotValidValue
+import com.rbb.gsaggs.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
+import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
 import com.tdunning.math.stats.{ MergingDigest, TDigest }
 import com.yahoo.memory.Memory
 import com.yahoo.sketches.ArrayOfStringsSerDe

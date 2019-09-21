@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import org.apache.spark.sql.Column
 

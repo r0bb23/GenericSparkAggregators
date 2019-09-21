@@ -1,7 +1,7 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import com.holdenkarau.spark.testing.DataFrameSuiteBase
-import com.rbb.genericsparkaggregators.CaseClasses.SimScore
+import com.rbb.gsaggs.CaseClasses.SimScore
 import org.apache.spark.sql.functions.{ callUDF, col, lit }
 import org.apache.spark.sql.SparkSession
 import org.scalatest.FunSuite

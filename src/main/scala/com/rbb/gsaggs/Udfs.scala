@@ -1,8 +1,8 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 import com.google.common.{ geometry => s2 }
-import com.rbb.genericsparkaggregators.CaseClasses.{ FreqSketch, Histogram, HistogramAndPercentiles, HistogramAndStats, SimScore, Stats }
-import com.rbb.genericsparkaggregators.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
+import com.rbb.gsaggs.CaseClasses.{ FreqSketch, Histogram, HistogramAndPercentiles, HistogramAndStats, SimScore, Stats }
+import com.rbb.gsaggs.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
 import com.mozilla.spark.sql.hyperloglog.aggregates.HyperLogLogMerge
 import com.mozilla.spark.sql.hyperloglog.functions.{ hllCardinality, hllCreate }
 import com.rockymadden.stringmetric.similarity.{ DiceSorensenMetric, JaroMetric, NGramMetric, OverlapMetric }
@@ -35,7 +35,6 @@ object Udfs {
     spark.udf.register("empty_tdigest", createEmptyTDigest _)
     spark.udf.register("first_array_element", getFirstArrayElement _)
     spark.udf.register("freq_class", FreqSketchUdfs.freqSketchArrayToFreqSketch _)
-    spark.udf.register("get_attribute_type", get_attribute_type _)
     spark.udf.register("get_ip_24block", get_ip_24block _)
     spark.udf.register("get_ip_24block_array", get_ip_24block_array _)
     spark.udf.register("histogram_and_percentiles", toHistogramAndPercentiles _)
@@ -193,6 +192,8 @@ object Udfs {
   def arrayToString(arr: Seq[Any]): String = {
     s"""[${arr.mkString(",")}]"""
   }
+  
+  val arrayToStringUdf = udf((arr: Seq[String]) => arrayToString(arr))
 
   def getFirstArrayElement(stringArray: Seq[String]): String = {
     stringArray.head

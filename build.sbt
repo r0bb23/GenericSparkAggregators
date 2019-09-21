@@ -28,8 +28,8 @@ lazy val root = (project in file("."))
   .settings(
     commonSettings,
     rootSettings,
-    name := "generic-spark-aggregators",
-    libraryDependencies ++= Dependencies.generalDeps ++ Dependencies.sparkDeps ++ Dependencies.analyticsDeps,
+    name := "gsaggs",
+    libraryDependencies ++= Dependencies.analyticsDeps ++ Dependencies.generalDeps ++ Dependencies.sparkDeps,
     test in assembly := {},
     fork in Test := true,
     // Full stack traces + timings

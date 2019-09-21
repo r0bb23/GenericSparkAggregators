@@ -1,4 +1,4 @@
-package com.rbb.genericsparkaggregators
+package com.rbb.gsaggs
 
 /*
 Also see built ins:
@@ -24,7 +24,7 @@ https://spark.apache.org/docs/latest/sql-programming-guide.html#hive-tables
 import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.{ Beta, Gaussian, RandBasis }
 import collection.JavaConverters._
-import com.rbb.genericsparkaggregators.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
+import com.rbb.gsaggs.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
 import com.tdunning.math.stats.{ MergingDigest, TDigest }
 import com.yahoo.sketches.ArrayOfStringsSerDe
 import com.yahoo.sketches.frequencies.ItemsSketch
@@ -53,25 +53,6 @@ import org.scalatest._
  * https://spark.apache.org/docs/2.3.0/api/java/org/apache/spark/sql/DataFrameReader.html
  */
 object ResourceHelpers {
-
-  // Read gzipped protocol buffer data
-  // https://stackoverflow.com/questions/14940099/how-to-read-gzipd-file-in-scala
-  def readPbGz(file: String)(implicit ss: SparkSession): Dataset[Row] = {
-    import ss.implicits._
-    val stream = this.getClass.getResourceAsStream(s"/$file")
-    val unzippedStream = new GZIPInputStream(new BufferedInputStream(stream))
-    lazy val recordList = scala.io.Source.fromInputStream(unzippedStream)
-      .getLines
-      .toList
-
-    // Break it up into a bunch of small pieces before sending it off to get better parallelism
-    // https://spark.apache.org/docs/2.3.0/api/scala/index.html#org.apache.spark.SparkContext@parallelize[T](seq:Seq[T],numSlices:Int)(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]
-    ss.sparkContext.parallelize(recordList, recordList.length / 100)
-      .map { case (b64Proto) => ParquetConverter.parseLine(new FileMetaDataClass(), b64Proto) }
-      .toDF()
-      .transform(ParquetConverter.addDateHour)
-  }
-
   def readResourcePerLine(file: String)(implicit ss: SparkSession): Dataset[String] = {
     import ss.implicits._
     val stream = this.getClass.getResourceAsStream(s"/$file")
