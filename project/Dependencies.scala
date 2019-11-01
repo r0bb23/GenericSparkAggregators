@@ -5,7 +5,7 @@ object Dependencies {
     val sparkDeps = Seq(
         "org.apache.spark" %% "spark-core" % sparkVer % "provided",
         "org.apache.spark" %% "spark-sql" % sparkVer % "provided",
-        "com.holdenkarau" %% "spark-testing-base" % s"${sparkVer}_0.12.0" % "test",
+        "com.holdenkarau" %% "spark-testing-base" % s"${sparkVer}_${sparkTestVer}" % "test",
     )
 
     val generalDeps = Seq(
@@ -20,6 +20,7 @@ object Dependencies {
         "com.twitter" %% "algebird-core" % algebirdVer,
         "com.rockymadden.stringmetric" %% "stringmetric-core" % stringmetricVer,
         "io.sgr" % "s2-geometry-library-java" % s2GeometryVer,
+        "com.datadoghq" % "sketches-java" % ddSketchVer,
     )
     
     val repos = Seq(
