@@ -10,7 +10,7 @@ import org.apache.spark.sql.catalyst.expressions.{
   LessThanOrEqual,
   Literal,
   ScalaUDF,
-  Subtract,
+  Subtract
 }
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Column
@@ -23,9 +23,9 @@ object SessionUDWFS {
   // Assigns a random UUID to the window for events that are within the sessionWindow of eachother
   // Based on the work done here: https://github.com/rcongiu/spark-udwf-session/blob/master/src/main/scala/com/nuvola_tech/spark/SessionUDWF.scala
   case class SessionUDWF(
-    epochSeconds: Expression,
-    session: Expression,
-    sessionWindow: Expression = Literal(defaultMaxSessionLengthSeconds)
+      epochSeconds: Expression,
+      session: Expression,
+      sessionWindow: Expression = Literal(defaultMaxSessionLengthSeconds)
   ) extends AggregateWindowFunction {
     self: Product =>
 
@@ -61,11 +61,18 @@ object SessionUDWFS {
 
   protected val createNewSession = () => org.apache.spark.unsafe.types.UTF8String.fromString(UUID.randomUUID().toString)
 
-  def calculateSession(es: Column, sess: Column): Column = withExpr {
+  def calculateSession(
+      es: Column,
+      sess: Column
+  ): Column = withExpr {
     SessionUDWF(es.expr, sess.expr, Literal(defaultMaxSessionLengthSeconds))
   }
 
-  def calculateSession(es: Column, sess: Column, sessionWindow: Column): Column = withExpr {
+  def calculateSession(
+      es: Column,
+      sess: Column,
+      sessionWindow: Column
+  ): Column = withExpr {
     SessionUDWF(es.expr, sess.expr, sessionWindow.expr)
   }
 

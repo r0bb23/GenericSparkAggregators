@@ -9,11 +9,11 @@ object CaseClasses {
   )
 
   case class FreqSketch(
-      value:   String,
       freq:    Long,
       freq_05: Long,
       freq_95: Long,
-      percent: Double
+      percent: Double,
+      value:   String
   )
 
   case class Histogram(

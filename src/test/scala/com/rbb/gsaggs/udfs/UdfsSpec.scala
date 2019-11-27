@@ -1,4 +1,4 @@
-package com.rbb.gsaggs
+package com.rbb.gsaggs.udfs
 
 import com.holdenkarau.spark.testing.DataFrameSuiteBase
 import com.rbb.gsaggs.CaseClasses.SimScore

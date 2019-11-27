@@ -22,26 +22,55 @@ https://spark.apache.org/docs/latest/sql-programming-guide.html#hive-tables
 
 */
 import breeze.linalg.DenseMatrix
-import breeze.stats.distributions.{ Beta, Gaussian, RandBasis }
+import breeze.stats.distributions.{
+  Beta,
+  Gaussian,
+  RandBasis
+}
 import collection.JavaConverters._
-import com.rbb.gsaggs.ScalaHelpers.{ byteArrayToObject, objectToByteArray }
-import com.tdunning.math.stats.{ MergingDigest, TDigest }
+import com.rbb.gsaggs.ScalaHelpers.{
+  byteArrayToObject,
+  objectToByteArray
+}
+import com.tdunning.math.stats.{
+  MergingDigest,
+  TDigest
+}
 import com.yahoo.sketches.ArrayOfStringsSerDe
 import com.yahoo.sketches.frequencies.ItemsSketch
 import java.io._
 import java.io.BufferedInputStream
 import java.io.File
 import java.nio.ByteBuffer
-import java.nio.file.{ FileSystems, Paths, Path, Files }
-import java.util.{ UUID, List => JList }
-import java.util.function.{ Function => JFunction, Predicate => JPredicate, BiPredicate }
+import java.nio.file.{
+  FileSystems,
+  Files,
+  Path,
+  Paths
+}
+import java.util.{
+  List => JList,
+  UUID
+}
+import java.util.function.{
+  BiPredicate,
+  Function => JFunction,
+  Predicate => JPredicate
+}
 import java.util.stream.Collectors
 import java.util.zip.GZIPInputStream
 import org.apache.commons.math3.stat.Frequency
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{ Dataset, Row, SparkSession }
-import org.apache.spark.sql.types.{ DataType, StructType }
+import org.apache.spark.sql.{
+  Dataset,
+  Row,
+  SparkSession
+}
+import org.apache.spark.sql.types.{
+  DataType,
+  StructType
+}
 import org.scalatest._
 
 /* Helpers for loading resource files as test fixtures
@@ -53,7 +82,9 @@ import org.scalatest._
  * https://spark.apache.org/docs/2.3.0/api/java/org/apache/spark/sql/DataFrameReader.html
  */
 object ResourceHelpers {
-  def readResourcePerLine(file: String)(implicit ss: SparkSession): Dataset[String] = {
+  def readResourcePerLine(
+      file: String
+  )(implicit ss: SparkSession): Dataset[String] = {
     import ss.implicits._
     val stream = this.getClass.getResourceAsStream(s"/$file")
     scala.io.Source.fromInputStream(stream)
@@ -62,17 +93,24 @@ object ResourceHelpers {
       .toDS
   }
 
-  def readResourceAsString(file: String): String = {
+  def readResourceAsString(
+      file: String
+  ): String = {
     val stream = this.getClass.getResourceAsStream(s"/$file")
     scala.io.Source.fromInputStream(stream)
       .mkString
   }
 
-  def readCSVResourceAsDataset(file: String)(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
+  def readCSVResourceAsDataset(
+      file: String
+  )(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
     ss.read.csv(readResourcePerLine(file))
   }
 
-  def readCSVResourceAsDataFrame(file: String, header: String = "true")(implicit ss: SparkSession): Dataset[Row] = {
+  def readCSVResourceAsDataFrame(
+      file: String,
+      header: String = "true"
+  )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$file").toString
     val path = java.net.URLDecoder.decode(urlPath, "UTF-8")
     ss.read.format("csv").option("header", header).load(path)
@@ -81,7 +119,11 @@ object ResourceHelpers {
   /**
     * Read from a parquet file and apply the schema
     */
-  def readParquetResourceAsDataFrame(dataFile: String, schemaJsonFile: String = null, compressionType: String = "snappy")(implicit ss: SparkSession): Dataset[Row] = {
+  def readParquetResourceAsDataFrame(
+      dataFile: String,
+      schemaJsonFile: String = null,
+      compressionType: String = "snappy"
+  )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$dataFile").toString
     val path = java.net.URLDecoder.decode(urlPath, "UTF-8")
     var df = ss.read.format("parquet").option("compression", compressionType).load(path)
@@ -94,7 +136,9 @@ object ResourceHelpers {
     return df
   }
 
-  def readJsonResourceAsDataset(file: String)(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
+  def readJsonResourceAsDataset(
+      file: String
+  )(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
     ss.read.json(readResourcePerLine(file))
   }
 }
@@ -162,7 +206,10 @@ object Utils {
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L308
     * Our version combined the functionality of createDirectory w/o retries
     */
-  def createTempDir(root: String = System.getProperty("java.io.tmpdir"), namePrefix: String = "ionic-spark"): File = {
+  def createTempDir(
+      root: String = System.getProperty("java.io.tmpdir"),
+      namePrefix: String = "test-spark"
+  ): File = {
     val dir = new File(root, namePrefix + "-" + UUID.randomUUID.toString)
     dir.getCanonicalFile
   }
@@ -172,7 +219,9 @@ object Utils {
     *
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1009
     */
-  def deleteRecursively(file: File) {
+  def deleteRecursively(
+    file: File
+  ): Unit = {
     if (file != null) {
       try {
         if (file.isDirectory && !isSymlink(file)) {
@@ -207,7 +256,9 @@ object Utils {
     *
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1041
     */
-  def listFilesSafely(file: File): Seq[File] = {
+  def listFilesSafely(
+      file: File
+  ): Seq[File] = {
     if (file.exists()) {
       val files = file.listFiles()
       if (files == null) {
@@ -225,7 +276,9 @@ object Utils {
     *
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1041
     */
-  def isSymlink(file: File): Boolean = {
+  def isSymlink(
+      file: File
+  ): Boolean = {
     return Files.isSymbolicLink(Paths.get(file.toURI))
   }
 
@@ -240,12 +293,16 @@ object Utils {
     * https://github.com/scala/scala-java8-compat
     *
     */
-  def toJavaFunction[A, B](f: Function1[A, B]) = new JFunction[A, B] {
-    override def apply(a: A): B = f(a)
+  def toJavaFunction[AType, BType](
+      f: Function1[AType, BType]
+  ) = new JFunction[AType, BType] {
+    override def apply(a: AType): BType = f(a)
   }
 
-  def toJavaPredicate[A](f: Function1[A, Boolean]) = new JPredicate[A] {
-    override def test(a: A): Boolean = f(a)
+  def toJavaPredicate[AType](
+      f: Function1[AType, Boolean]
+  ) = new JPredicate[AType] {
+    override def test(a: AType): Boolean = f(a)
   }
 
   // Get files matching a given predicate
@@ -253,7 +310,10 @@ object Utils {
   // Based off: https://stackoverflow.com/questions/29574167/how-to-use-files-walk-to-get-a-graph-of-files-based-on-conditions
   // Need to cast to java predicate otherwise we run into issues here.  This same thing works in with scala 2.12 w/o the cast.
   // Note that this also doesn't take a filesystem, so doesn't work for HDFS.
-  def getMatchingFiles(basedir: Path, filterFn: (Path) => Boolean): List[Path] = {
+  def getMatchingFiles(
+      basedir: Path,
+      filterFn: (Path) => Boolean
+  ): List[Path] = {
     Files.walk(basedir.normalize)
       .filter(Utils.toJavaPredicate(filterFn))
       .collect(Collectors.toList())
@@ -263,21 +323,27 @@ object Utils {
 }
 
 object TestHelpers {
-  def toFrequency(keys: Seq[String]): Array[Byte] = {
+  def toFrequency(
+      keys: Seq[String]
+  ): Array[Byte] = {
     val freq = new Frequency()
     keys.foreach(key => freq.addValue(key))
 
     objectToByteArray(freq)
   }
-  
-  def toSketchFrequency(keys: Seq[String]): Array[Byte] = {
+
+  def toSketchFrequency(
+      keys: Seq[String]
+  ): Array[Byte] = {
     val freq = new ItemsSketch[String](512)
     keys.foreach(key => freq.update(key))
 
     freq.toByteArray(new ArrayOfStringsSerDe())
   }
 
-  def toTdigest(values: Seq[Double]): Array[Byte] = {
+  def toTdigest(
+      values: Seq[Double]
+  ): Array[Byte] = {
     val tdigest = TDigest.createMergingDigest(100)
     values.foreach(value => tdigest.add(value))
 
@@ -286,15 +352,31 @@ object TestHelpers {
     tdigestBuffer.array()
   }
 
-  def randGauss(sampleSize: Int = 50, mu: Int = 0, sigma: Int = 1, seed: Int = 1234): Seq[Double] = {
+  def randGauss(
+      sampleSize: Int = 50,
+      mu: Int = 0,
+      sigma: Int = 1,
+      seed: Int = 1234
+  ): Seq[Double] = {
     new Gaussian(mu, sigma)(RandBasis.withSeed(seed)).sample(sampleSize).toSeq
   }
 
-  def randBeta(sampleSize: Int = 50, alpha: Double = 2.0, beta: Double = 2.0, seed: Int = 1234): Seq[Double] = {
+  def randBeta(
+      sampleSize: Int = 50,
+      alpha: Double = 2.0,
+      beta: Double = 2.0,
+      seed: Int = 1234
+  ): Seq[Double] = {
     new Beta(alpha, beta)(RandBasis.withSeed(seed)).sample(sampleSize).toSeq
   }
 
-  def randFreqBeta(strings: List[String], sampleSize: Int = 50, alpha: Double = 2.0, beta: Double = 2.0, seed: Int = 1234): Seq[String] = {
+  def randFreqBeta(
+      strings: List[String],
+      sampleSize: Int = 50,
+      alpha: Double = 2.0,
+      beta: Double = 2.0,
+      seed: Int = 1234
+  ): Seq[String] = {
     val betaSeq = randBeta(sampleSize = sampleSize, seed = seed)
 
     betaSeq.map(x => strings(math.floor(x * strings.length).toInt))

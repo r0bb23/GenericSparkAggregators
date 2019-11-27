@@ -1,9 +1,26 @@
 package com.rbb.gsaggs
 
 import org.apache.spark.sql.expressions.UserDefinedFunction
-import org.apache.spark.sql.functions.{ format_string, col, hash, udf, spark_partition_id }
-import org.apache.spark.sql.types.{ ArrayType, DataType, IntegerType, StringType, StructType }
-import org.apache.spark.sql.{ Column, DataFrame, Row, SparkSession }
+import org.apache.spark.sql.functions.{
+  format_string,
+  col,
+  hash,
+  udf,
+  spark_partition_id
+}
+import org.apache.spark.sql.types.{
+  ArrayType,
+  DataType,
+  IntegerType,
+  StringType,
+  StructType
+}
+import org.apache.spark.sql.{
+  Column,
+  DataFrame,
+  Row,
+  SparkSession
+}
 import org.slf4j.LoggerFactory
 
 object SparkDataFrameHelpers {
@@ -17,13 +34,17 @@ object SparkDataFrameHelpers {
   val colExpAlias = raw"""(\w+)\s+(?i)AS\s+(\w+)""".r
   val colExpFunc = raw"""(\w+)\((\w+)\)\s+(?i)AS\s+(\w+)""".r
 
-  def parseColumnExprs(colExpr: String): (String, String, String) = colExpr match {
+  def parseColumnExprs(
+      colExpr: String
+  ): (String, String, String) = colExpr match {
     case colExpSimple(colName) => (null, colName, null)
     case colExpAlias(colName, alias) => (null, colName, alias)
     case colExpFunc(func, colName, alias) => (func, colName, alias)
   }
 
-  def extractColNamesFromExprs(colExprs: List[String]): List[String] = {
+  def extractColNamesFromExprs(
+      colExprs: List[String]
+  ): List[String] = {
     colExprs.map(colExpr => {
       colExpr match {
         case colExpSimple(colName) => colName
@@ -35,7 +56,10 @@ object SparkDataFrameHelpers {
 
   // Merge dataframes
   // Often used in `foldLeft` statements
-  def unionDF(df1: Option[DataFrame], df2: DataFrame): Option[DataFrame] = {
+  def unionDF(
+      df1: Option[DataFrame],
+      df2: DataFrame
+  ): Option[DataFrame] = {
     if (df2 == null) {
       df1
     } else if (df1.isEmpty) {
@@ -45,16 +69,20 @@ object SparkDataFrameHelpers {
     }
   }
 
-  def deleteAllTempTables(spark: SparkSession) {
+  def deleteAllTempTables(
+      spark: SparkSession
+  ) {
     spark.sqlContext.tables().filter("isTemporary == true").select("tableName").collect.foreach(tblName => spark.catalog.dropTempView(tblName(0).toString))
   }
 
-  def getNestedRowValue[returnType](row: Row, value: String): Option[returnType] = {
+  def getNestedRowValue[ValueType](
+      row: Row, value: String
+  ): Option[ValueType] = {
     val splitList = value.split("\\.", 2)
     if (row.schema == null) {
       return None
     } else if (splitList.length == 1) {
-      return Option(row.getAs[returnType](splitList(0)))
+      return Option(row.getAs[ValueType](splitList(0)))
     } else {
       return getNestedRowValue(Option(row.getAs[Row](splitList(0))).getOrElse(Row()), splitList(1))
     }
@@ -72,19 +100,25 @@ object SparkDataFrameHelpers {
   /**
     *   Get the value of a row field as a certain type by name.
     */
-  def getRowVal[T](r: Row, name: String): T = {
-    r.getAs[T](r.fieldIndex(name))
+  def getRowVal[ValueType](r: Row, name: String): ValueType = {
+    r.getAs[ValueType](r.fieldIndex(name))
   }
 
-  def toBasicColName(col: String): String = {
+  def toBasicColName(
+      col: String
+  ): String = {
     return col.substring(col.lastIndexOf(".") + 1)
   }
 
-  def toBasicColNames(cols: List[String]): List[String] = {
+  def toBasicColNames(
+      cols: List[String]
+  ): List[String] = {
     return cols.map(col => toBasicColName(col))
   }
 
-  def stringListsToCols(stringLists: List[String]*): List[Column] = {
+  def stringListsToCols(
+      stringLists: List[String]*
+  ): List[Column] = {
     val strings = stringLists.flatten.toList
     return strings.map(element => col(element))
   }
@@ -93,7 +127,9 @@ object SparkDataFrameHelpers {
     * Get the number of partitions for a dataframe via the harmonic mean of ideal size in bytes,
     * idea size wrt available cores, and current number of partitions.
     */
-  def optimalNumberOfPartitions(dataset: DataFrame): Int = {
+  def optimalNumberOfPartitions(
+      dataset: DataFrame
+  ): Int = {
     import org.apache.spark.util.SizeEstimator
 
     // 4 partitions per core
@@ -119,11 +155,17 @@ object SparkDataFrameHelpers {
   }
 
   // Returns a dataframe with partition_id, ct
-  def sizePerPartition(df: DataFrame): DataFrame = {
+  def sizePerPartition(
+      df: DataFrame
+  ): DataFrame = {
     df.groupBy(spark_partition_id).count
   }
 
-  def coalesce(df: DataFrame, rowCount: Long, maxRowsPerPartition: Long = FileSystemGlobals.MAX_RECORDS_PER_FILE): DataFrame = {
+  def coalesce(
+      df: DataFrame,
+      rowCount: Long,
+      maxRowsPerPartition: Long = FileSystemGlobals.MAX_RECORDS_PER_FILE
+  ): DataFrame = {
     val partitionSize = rowCount / maxRowsPerPartition + 1
     if (df.rdd.partitions.size <= partitionSize) {
       df
@@ -143,7 +185,6 @@ object SparkDataFrameHelpers {
       partColName: String, subPartColNames: Seq[String],
       maxRecordsPerPartitionGroup: Int, npartitions: Option[Int] = None
   ): DataFrame = {
-
     val itemsPerGrouping = df
       .groupBy(partColName)
       .count
@@ -162,7 +203,10 @@ object SparkDataFrameHelpers {
 
       // Custom partitioning is not directly available for dataframes, so we need to use a udf
       // https://stackoverflow.com/questions/42071362/spark-dataset-custom-partitioner
-      def partitionByCol(partitionColVal: Any, subPartHash: Int): Int = {
+      def partitionByCol(
+          partitionColVal: Any,
+          subPartHash: Int
+      ): Int = {
         // Calculate # parts for this
         val nparts = subPartitionsPerGrouping.value.getOrElse(partitionColVal, 1)
 
@@ -186,7 +230,10 @@ object SparkDataFrameHelpers {
   // Get basic DataType of a field
   // Example usage: getBasicDataType(df.schema, "datime.date")
   // Example usage: getBasicDataType(df.schema, "files.element.extension")
-  def getBasicDataType(dtype: DataType, name: String): DataType = {
+  def getBasicDataType(
+      dtype: DataType,
+      name: String
+  ): DataType = {
     val names = name.split('.')
     val root = names(0)
     val newName = names.drop(1).mkString(".")
@@ -204,7 +251,10 @@ object SparkDataFrameHelpers {
   }
 
   // Get a String column by concatenating multiple columns
-  def getFormatString(schema: DataType, colNames: List[String]): Column = {
+  def getFormatString(
+      schema: DataType,
+      colNames: List[String]
+  ): Column = {
     val format = colNames.map(name => getBasicDataType(schema, name) match {
       case StringType => "%s"
       case IntegerType => "%d"

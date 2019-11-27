@@ -1,4 +1,4 @@
-package com.rbb.gsaggs
+package com.rbb.gsaggs.udfs
 
 import com.google.common.{ geometry => s2 }
 import com.rbb.gsaggs.CaseClasses.{
@@ -9,11 +9,11 @@ import com.rbb.gsaggs.CaseClasses.{
   IntermediateStddevStats,
   SimScore,
   Stats,
-  StddevStats,
+  StddevStats
 }
 import com.rbb.gsaggs.ScalaHelpers.{
   byteArrayToObject,
-  objectToByteArray,
+  objectToByteArray
 }
 import com.mozilla.spark.sql.hyperloglog.aggregates.HyperLogLogMerge
 import com.mozilla.spark.sql.hyperloglog.functions.{
@@ -24,11 +24,11 @@ import com.rockymadden.stringmetric.similarity.{
   DiceSorensenMetric,
   JaroMetric,
   NGramMetric,
-  OverlapMetric,
+  OverlapMetric
 }
 import com.rockymadden.stringmetric.transform.{
   filterAlpha,
-  ignoreAlphaCase,
+  ignoreAlphaCase
 }
 import com.tdunning.math.stats.{
   MergingDigest,
@@ -36,7 +36,7 @@ import com.tdunning.math.stats.{
 }
 import com.twitter.algebird.{
   HyperLogLog,
-  HyperLogLogMonoid,
+  HyperLogLogMonoid
 }
 import com.yahoo.memory.Memory
 import com.yahoo.sketches.ArrayOfStringsSerDe
@@ -45,11 +45,11 @@ import java.nio.ByteBuffer
 import org.apache.commons.math3.special.Erf
 import org.apache.spark.sql.{
   Row,
-  SparkSession,
+  SparkSession
 }
 import org.apache.spark.sql.expressions.{
   MutableAggregationBuffer,
-  UserDefinedAggregateFunction,
+  UserDefinedAggregateFunction
 }
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{
@@ -57,10 +57,11 @@ import org.apache.spark.sql.types.{
   DataType,
   DoubleType,
   StructField,
-  StructType,
+  StructType
 }
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import scala.math
 
 object Udfs {
   def registerUDFs(): SparkSession = {
@@ -87,7 +88,7 @@ object Udfs {
     spark.udf.register("replace_string", replaceString _)
     spark.udf.register("sim_scores", getSimScores _)
     spark.udf.register("tdigest", new toTDigest)
-    
+
     spark
   }
 
@@ -96,7 +97,10 @@ object Udfs {
 
   val flattenUdf = udf((x: Seq[Seq[String]]) => x.flatten.distinct)
 
-  def hllConverter(data: Either[List[Int], List[String]]): Array[Byte] = {
+  def hllConverter(
+      data: Either[List[Int],
+      List[String]]
+  ): Array[Byte] = {
     val hllMonoid = new HyperLogLogMonoid(bits = 12)
     val hlls = data match {
       case Left(dataInt) => dataInt.map { x => hllMonoid.create(HyperLogLog.toBytes(hllMonoid.toHLL(x))) }
@@ -106,18 +110,24 @@ object Udfs {
     HyperLogLog.toBytes(combinedHll)
   }
 
-  def numericToDouble(num: Number): Double = {
+  def numericToDouble(
+      num: Number
+  ): Double = {
     num.asInstanceOf[Number].doubleValue
   }
 
-  def replaceString(colValue: String, checkValue: String, replacementValue: String): String = {
+  def replaceString(
+      colValue: String,
+      checkValue: String,
+      replacementValue: String
+  ): String = {
     val trimedValue = if (colValue != null){
       colValue.trim
     }
     else {
       ""
     }
-    
+
     if (trimedValue == checkValue) {
       replacementValue
     } else {
@@ -125,7 +135,10 @@ object Udfs {
     }
   }
 
-  def replaceEmptyStringArray(colList: Seq[String], replacementValue: String): Seq[String] = {
+  def replaceEmptyStringArray(
+      colList: Seq[String],
+      replacementValue: String
+  ): Seq[String] = {
     if (colList.isEmpty) {
       Seq(replacementValue)
     } else {
@@ -137,7 +150,9 @@ object Udfs {
 
   // get /24 block of an IP
   val ipv4Regex = """(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})""".r
-  def get_ip_24block(ip: String): String = {
+  def get_ip_24block(
+      ip: String
+  ): String = {
     ip match {
       case ipv4Regex(ip1, ip2, ip3, ip4) => s"${ip1}.${ip2}.${ip3}"
       case _ => ""
@@ -145,20 +160,28 @@ object Udfs {
   }
 
   // The input ips are ips seperated by ","
-  def get_ip_24block_array(ips: String): Array[String] = {
+  def get_ip_24block_array(
+      ips: String
+  ): Array[String] = {
     ips.split(",").map(ip => get_ip_24block(ip))
   }
 
   /*
   *   Uses googles s2 library https://github.com/google/s2-geometry-library-java
   */
-  def latLongToCellId(lat: Double, long: Double, level: Int = 5): Long = {
+  def latLongToCellId(
+      lat: Double,
+      long: Double,
+      level: Int = 5
+  ): Long = {
     s2.S2CellId.fromLatLng(s2.S2LatLng.fromDegrees(lat, long)).parent(level).id
   }
 
   val latLongToCellIdUdf = udf((lat: Double, long: Double) => latLongToCellId(lat, long))
 
-  def tdigestArrayToObject(tDigestArray: Array[Byte]): TDigest = {
+  def tdigestArrayToObject(
+      tDigestArray: Array[Byte]
+  ): TDigest = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
     buffer.rewind
@@ -167,7 +190,10 @@ object Udfs {
     tDigest
   }
 
-  def tdigestKSTest(tdigestModelArray: Array[Byte], tdigestTestArray: Array[Byte]): Double = {
+  def tdigestKSTest(
+      tdigestModelArray: Array[Byte],
+      tdigestTestArray: Array[Byte]
+  ): Double = {
     val tdigestModel = tdigestArrayToObject(tdigestModelArray)
     val tdigestTest = tdigestArrayToObject(tdigestTestArray)
 
@@ -179,7 +205,7 @@ object Udfs {
         maxCDFDiff = math.max(maxCDFDiff, math.abs(tdigestModel.cdf(centroid.mean) - centroid.count.toDouble))
       }
     }
-    
+
     val outlierScore = if (n > 2) {
       maxCDFDiff
     } else {
@@ -191,7 +217,10 @@ object Udfs {
 
   val tdigestKSTestUdf = udf((tdigestModelArray: Array[Byte], tdigestTestArray: Array[Byte]) => tdigestKSTest(tdigestModelArray, tdigestTestArray))
 
-  def tdigestCdfScore(tdigestModelArray: Array[Byte], value: Double): Double = {
+  def tdigestCdfScore(
+      tdigestModelArray: Array[Byte],
+      value: Double
+  ): Double = {
     val tdigestModel = tdigestArrayToObject(tdigestModelArray)
     val outlierScore = tdigestModel.cdf(value)
 
@@ -203,7 +232,11 @@ object Udfs {
   /*
   * Normalizes an outlier score transforming it into probability. Ranges between [0, 1]
   */
-  def outlierScoreGaussianScaler(outlierScore: Double, sampleMean: Double, sampleStddev: Double): Double = {
+  def outlierScoreGaussianScaler(
+      outlierScore: Double,
+      sampleMean: Double,
+      sampleStddev: Double
+  ): Double = {
     val normalizedOutlierScore = (outlierScore - sampleMean) / (sampleStddev * math.sqrt(2))
     val erfScore = Erf.erf(normalizedOutlierScore)
 
@@ -221,7 +254,9 @@ object Udfs {
   /*
   * Averages outlier scores.
   */
-  def outlierScore(outlierScores: Seq[Double]): Double = {
+  def outlierScore(
+      outlierScores: Seq[Double]
+  ): Double = {
     val outlierScoresSansNaN = outlierScores.filter(!_.isNaN)
     val outlierScore = outlierScoresSansNaN.sum / outlierScoresSansNaN.length
 
@@ -233,14 +268,19 @@ object Udfs {
   def arrayToString(arr: Seq[Any]): String = {
     s"""[${arr.mkString(",")}]"""
   }
-  
+
   val arrayToStringUdf = udf((arr: Seq[String]) => arrayToString(arr))
 
-  def getFirstArrayElement(stringArray: Seq[String]): String = {
+  def getFirstArrayElement(
+      stringArray: Seq[String]
+  ): String = {
     stringArray.head
   }
 
-  def getHistogramAndStats(tDigest: TDigest, isZeroBounded: Boolean = true): HistogramAndStats = {
+  def getHistogramAndStats(
+      tDigest: TDigest,
+      isZeroBounded: Boolean = true
+  ): HistogramAndStats = {
     val histogramArray = for (centroid <- tDigest.centroids)
       yield Histogram(
       centroid = centroid.mean,
@@ -281,7 +321,10 @@ object Udfs {
     )
   }
 
-  def getHistogramAndPercentiles(tDigest: TDigest, isZeroBounded: Boolean = true): HistogramAndPercentiles = {
+  def getHistogramAndPercentiles(
+      tDigest: TDigest,
+      isZeroBounded: Boolean = true
+  ): HistogramAndPercentiles = {
     val histogramArray = for (centroid <- tDigest.centroids)
       yield Histogram(
       centroid = centroid.mean,
@@ -314,7 +357,9 @@ object Udfs {
     )
   }
 
-  def toHistogramAndStats(tDigestArray: Array[Byte]): HistogramAndStats = {
+  def toHistogramAndStats(
+      tDigestArray: Array[Byte]
+  ): HistogramAndStats = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
     buffer.rewind
@@ -325,7 +370,9 @@ object Udfs {
 
   val toHistogramAndStatsUdf = udf((tDigestArray: Array[Byte]) => toHistogramAndStats(tDigestArray))
 
-  def toHistogramAndPercentiles(tDigestArray: Array[Byte]): HistogramAndPercentiles = {
+  def toHistogramAndPercentiles(
+      tDigestArray: Array[Byte]
+  ): HistogramAndPercentiles = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
     buffer.rewind
@@ -334,7 +381,9 @@ object Udfs {
     getHistogramAndPercentiles(tDigest: TDigest)
   }
 
-  def createTDigestFromVal[T](value: T): Array[Byte] = {
+  def createTDigestFromVal[ValueType](
+      value: ValueType
+  ): Array[Byte] = {
     val tDigest = TDigest.createMergingDigest(100)
     tDigest.add(value.asInstanceOf[Number].doubleValue)
 
@@ -352,7 +401,9 @@ object Udfs {
     buffer.array()
   }
 
-  def createTDigest[T](data: Seq[T]): Array[Byte] = {
+  def createTDigest[DateType](
+      data: Seq[DateType]
+  ): Array[Byte] = {
     val tDigest = TDigest.createMergingDigest(100)
     data.foreach(value => tDigest.add(value.asInstanceOf[Number].doubleValue))
 
@@ -362,7 +413,9 @@ object Udfs {
     buffer.array()
   }
 
-  def mergeTDigest(tDigests: Seq[Array[Byte]]): Array[Byte] = {
+  def mergeTDigest(
+      tDigests: Seq[Array[Byte]]
+  ): Array[Byte] = {
     val mergedTDigest = TDigest.createMergingDigest(100)
     tDigests.foreach {
       tDigest =>
@@ -381,14 +434,17 @@ object Udfs {
   }
 
   val udfTdigestCreate = udf((v: Double) => createTDigestFromVal(v))
-  
-  def mergeStddevStats(stddevStats1: IntermediateStddevStats, stddevStats2: IntermediateStddevStats): IntermediateStddevStats = {
+
+  def mergeStddevStats(
+      stddevStats1: IntermediateStddevStats,
+      stddevStats2: IntermediateStddevStats
+  ): IntermediateStddevStats = {
     val newCount = stddevStats1.count + stddevStats2.count
     val newSum = stddevStats1.sum + stddevStats2.sum
     val delta = stddevStats2.mean - stddevStats1.mean
     val (newMean, newM2) = if (delta != 0 & newCount != 0) {
     val newMean = (stddevStats1.mean * stddevStats1.count + stddevStats2.mean * stddevStats2.count) / newCount
-    val newM2 = stddevStats1.m2 + stddevStats2.m2 + pow(delta, 2.0) * stddevStats1.count * stddevStats2.count / newCount
+    val newM2 = stddevStats1.m2 + stddevStats2.m2 + math.pow(delta, 2.0) * stddevStats1.count * stddevStats2.count / newCount
 
     (newMean, newM2)
     } else {
@@ -398,21 +454,23 @@ object Udfs {
     case (None, None) => None
     case (Some(min1), None) => Some(min1)
     case (None, Some(min2)) => Some(min2)
-    case (Some(min1), Some(min2)) => Some(min(min1, min2))
+    case (Some(min1), Some(min2)) => Some(math.min(min1, min2))
     }
 
     IntermediateStddevStats(
     count = newCount,
     m2    = newM2,
-    max   = max(stddevStats1.max, stddevStats2.max),
+    max   = math.max(stddevStats1.max, stddevStats2.max),
     mean  = newMean,
     min   = newMin,
     sum   = newSum
     )
   }
-  
-  def stddevStatsClass(stats: IntermediateStddevStats): StddevStats = {
-    val stddev = sqrt(stats.m2 / (stats.count - 1.0))
+
+  def stddevStatsClass(
+      stats: IntermediateStddevStats
+  ): StddevStats = {
+    val stddev = math.sqrt(stats.m2 / (stats.count - 1.0))
 
       StddevStats(
         coefvar = stddev / stats.mean,
@@ -425,11 +483,16 @@ object Udfs {
       )
   }
 
-  def geomMean(nums: Iterable[Double]): Double = {
+  def geomMean(
+      nums: Iterable[Double]
+  ): Double = {
     math.pow(nums.foldLeft(1.0) { _ * _ }, 1.0 / nums.size)
   }
 
-  def getSimScores(string1: String, string2: String): SimScore = {
+  def getSimScores(
+      string1: String,
+      string2: String
+  ): SimScore = {
     val composedTransform = (filterAlpha andThen ignoreAlphaCase)
 
     val scoreMap = Map(
@@ -496,11 +559,14 @@ object FreqSketchUdfs {
   // Decides what type of error to NOT favor when estimating value counts.
   val errorType = com.yahoo.sketches.frequencies.ErrorType.NO_FALSE_NEGATIVES
 
-  def freqEuclidDist(freqModelBinary: Array[Byte], freqTestBinary: Array[Byte]): Double = {
+  def freqEuclidDist(
+      freqModelBinary: Array[Byte],
+      freqTestBinary: Array[Byte]
+  ): Double = {
     def calcEuclidDist(
-      freqMerged: ItemsSketch[String],
-      freqModel: ItemsSketch[String],
-      freqTest: ItemsSketch[String]
+        freqMerged: ItemsSketch[String],
+        freqModel: ItemsSketch[String],
+        freqTest: ItemsSketch[String]
     ): Double = {
       val freqModelItems = freqModel.getFrequentItems(errorType)
       val freqTestItems = freqTest.getFrequentItems(errorType)
@@ -531,10 +597,12 @@ object FreqSketchUdfs {
 
   val freqEuclidDistUdf = udf((freqModelBinary: Array[Byte], freqTestBinary: Array[Byte]) => freqEuclidDist(freqModelBinary, freqTestBinary))
 
-  def freqSketchToFreqSketch(freq: ItemsSketch[String]): List[FreqSketch] = {
+  def freqSketchToFreqSketch(
+      freq: ItemsSketch[String]
+  ): List[FreqSketch] = {
     val freqItems = freq.getFrequentItems(errorType)
     val freqEstimatesSum = freqItems.foldLeft(0L) { (sum, row) => sum + row.getEstimate }.toDouble
-  
+
     val freqs = freqItems.map {
       row =>
         FreqSketch(
@@ -545,11 +613,13 @@ object FreqSketchUdfs {
           percent = row.getEstimate / freqEstimatesSum
         )
     }
-    
+
     freqs.toList
   }
 
-  def freqSketchArrayToFreqSketch(freqArray: Array[Byte]): List[FreqSketch] = {
+  def freqSketchArrayToFreqSketch(
+      freqArray: Array[Byte]
+  ): List[FreqSketch] = {
     val freq = ItemsSketch.getInstance(Memory.wrap(freqArray), new ArrayOfStringsSerDe())
     freqSketchToFreqSketch(freq)
   }

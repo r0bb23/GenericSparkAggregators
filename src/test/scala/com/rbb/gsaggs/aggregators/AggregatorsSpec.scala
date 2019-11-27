@@ -1,7 +1,10 @@
-package com.rbb.gsaggs
+package com.rbb.gsaggs.aggregators
 
 import com.holdenkarau.spark.testing.DataFrameSuiteBase
 import com.rbb.gsaggs.CaseClasses.HistogramAndPercentiles
+import com.rbb.gsaggs.TestHelpers
+import com.rbb.gsaggs.udfs._
+import com.rbb.gsaggs.udwfs._
 import com.mozilla.spark.sql.hyperloglog.aggregates._
 import com.mozilla.spark.sql.hyperloglog.functions._
 import org.apache.spark.SparkException
@@ -58,14 +61,14 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       .agg(FreqSketchAggs.toFreq(List("cat_col")).toColumn.name("freq"))
       .groupBy()
       .agg(FreqSketchAggs.mergeFreqs("freq").toColumn.name("freq"))
-      
+
     val actual = sc.parallelize(List[Array[Byte]](
       TestHelpers.toSketchFrequency(List("a", "b", "a", "a", "c", "b", "c"))
     )).toDF("freq")
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("To tdigest test nSteps = None") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -93,7 +96,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("To tdigest test nSteps = 24") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -127,11 +130,11 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("To tdigest test nSteps < count") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
-  
+
     intercept[SparkException] {
       val test = sc.parallelize(List[(String, Double)](
         ("user1", 1.0),
@@ -146,7 +149,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
         .groupBy("users")
         .agg(TDigestAggs.toTDigest("double_col", Some(1)).toColumn.name("tdigest"))
         .orderBy(col("users").asc)
-      
+
       test.first
     }
   }
@@ -178,7 +181,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("To percentiles test nSteps = 24") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -212,11 +215,11 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("To percentiles test nSteps < count") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
-  
+
     intercept[SparkException] {
       val test = sc.parallelize(List[(String, Double)](
         ("user1", 1.0),
@@ -231,7 +234,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
         .groupBy("users")
         .agg(TDigestAggs.toPercentiles("double_col", Some(1)).toColumn.name("tdigest"))
         .orderBy(col("users").asc)
-      
+
       test.first
     }
   }
@@ -261,7 +264,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assertDataFrameEquals(test, actual) // equal
   }
-  
+
   test("StddevStats test nsteps = None") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -277,7 +280,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
     ))
       .toDF("users", "double_col")
       .groupBy()
-      .agg(StreamingStatsAggs.stddevStats("double_col").toColumn.name("tsstats"))
+      .agg(StreamingStatsAggs.toStddevStats("double_col").toColumn.name("tsstats"))
       .select("tsstats.*")
       .first
       .toSeq
@@ -286,7 +289,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assert(test == actual)
   }
-  
+
   test("StddevStats test nsteps = 24") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -302,7 +305,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
     ))
       .toDF("users", "double_col")
       .groupBy()
-      .agg(StreamingStatsAggs.stddevStats("double_col", Some(24)).toColumn.name("tsstats"))
+      .agg(StreamingStatsAggs.toStddevStats("double_col", Some(24)).toColumn.name("tsstats"))
       .select("tsstats.*")
       .first
       .toSeq
@@ -311,7 +314,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
 
     assert(test == actual)
   }
-  
+
   test("StddevStats test nsteps < count") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -328,7 +331,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       ))
         .toDF("users", "double_col")
         .groupBy()
-        .agg(StreamingStatsAggs.stddevStats("double_col", Some(5)).toColumn.name("tsstats"))
+        .agg(StreamingStatsAggs.toStddevStats("double_col", Some(5)).toColumn.name("tsstats"))
         .select("tsstats.*")
         .first
         .toSeq
@@ -350,7 +353,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       ("user3", 1525238880)
     ))
       .toDF("users", "epoch_seconds")
-      .withColumn("user_session_id", UDWFS.calculateSession(col("epoch_seconds"), lit(null).cast(StringType)).over(lagWindow))
+      .withColumn("user_session_id", SessionUDWFS.calculateSession(col("epoch_seconds"), lit(null).cast(StringType)).over(lagWindow))
       .groupBy("users", "user_session_id")
       .count
       .orderBy(col("users").asc)
@@ -360,7 +363,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       .collect()
 
     val actual = Array(1, 1, 2, 2, 1)
-    
+
     // Test that the SUIDs are populated correctly
     assert(test.deep == actual.deep)
   }
@@ -380,8 +383,8 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       ("user3", 1525238880, null)
     ))
       .toDF("users", "epoch_seconds", "user_session_id")
-      .withColumn("user_session_id", UDWFS.calculateSession(col("epoch_seconds"), col("user_session_id")).over(lagWindow))
-      
+      .withColumn("user_session_id", SessionUDWFS.calculateSession(col("epoch_seconds"), col("user_session_id")).over(lagWindow))
+
     val testCountArray = test.groupBy("users", "user_session_id")
       .count
       .orderBy(col("users").asc)
@@ -399,7 +402,7 @@ class AggregatorTests extends FunSuite with DataFrameSuiteBase {
       .rdd
       .map(r => r(0))
       .collect()
-    
+
     // Test that the old SUID is carried over.
     assert(testSUID(3) == "session_user2")
   }

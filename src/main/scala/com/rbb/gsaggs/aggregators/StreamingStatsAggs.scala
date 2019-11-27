@@ -2,35 +2,30 @@ package com.rbb.gsaggs.aggregators
 
 import com.rbb.gsaggs.CaseClasses.{
   IntermediateStddevStats,
-  StddevStats,
+  StddevStats
 }
 import com.rbb.gsaggs.Exceptions.NotValidValue
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
-import com.rbb.gsaggs.udfs.Udfs.{
-    mergeStddevStats,
-    stddevStatsClass,
-}
+import com.rbb.gsaggs.udfs.Udfs
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.expressions.Aggregator
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types
 import org.apache.spark.sql.{
     Encoder,
-    Row,
+    Row
 }
 import scala.collection.JavaConversions._
-import scala.math.{
-    max,
-    min,
-    pow,
-    sqrt,
-}
+import scala.math
 
 object StreamingStatsAggs {
   // Assumes count will always be > 1.
   // Also assumes min value of 0.0 when using nStep option.
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
-  case class toStddevStats(colName: String, nSteps: Option[Long] = None) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
+  case class toStddevStats(
+      colName: String,
+      nSteps: Option[Long] = None
+  ) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
         count = 0,
@@ -43,7 +38,10 @@ object StreamingStatsAggs {
     }
 
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-    def reduce(currentStddevStats: IntermediateStddevStats, row: Row): IntermediateStddevStats = {
+    def reduce(
+        currentStddevStats: IntermediateStddevStats,
+        row: Row
+    ): IntermediateStddevStats = {
       val newValue = getNestedRowValue[Number](row, colName)
         .getOrElse(0.0)
         .asInstanceOf[Number]
@@ -55,7 +53,7 @@ object StreamingStatsAggs {
       val delta2 = newValue - newMean
       val newM2 = currentStddevStats.m2 + delta * delta2
       val newMin = if (!currentStddevStats.min.isEmpty) {
-        min(currentStddevStats.min.get, newValue)
+        math.min(currentStddevStats.min.get, newValue)
       } else {
         newValue
       }
@@ -63,7 +61,7 @@ object StreamingStatsAggs {
       IntermediateStddevStats(
         count = newCount,
         m2    = newM2,
-        max   = max(currentStddevStats.max, newValue),
+        max   = math.max(currentStddevStats.max, newValue),
         mean  = newMean,
         min   = Some(newMin),
         sum   = newSum
@@ -71,11 +69,16 @@ object StreamingStatsAggs {
     }
 
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-    def merge(stddevStats1: IntermediateStddevStats, stddevStats2: IntermediateStddevStats): IntermediateStddevStats = {
-      mergeStddevStats(stddevStats1, stddevStats2)
+    def merge(
+        stddevStats1: IntermediateStddevStats,
+        stddevStats2: IntermediateStddevStats
+    ): IntermediateStddevStats = {
+      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
-    def finish(stddevStats: IntermediateStddevStats): IntermediateStddevStats = {
+    def finish(
+        stddevStats: IntermediateStddevStats
+    ): IntermediateStddevStats = {
       if (nSteps.isEmpty) {
         stddevStats
       } else {
@@ -91,7 +94,7 @@ object StreamingStatsAggs {
         val newMean = stddevStats.mean * stddevStats.count / nSteps.get
 
         val newM2 = if (missingSteps > 0) {
-          stddevStats.m2 + 0.0 + pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
+          stddevStats.m2 + 0.0 + math.pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
         } else {
           stddevStats.m2
         }
@@ -111,11 +114,14 @@ object StreamingStatsAggs {
 
     def outputEncoder: Encoder[IntermediateStddevStats] = ExpressionEncoder()
   }
-  
+
   // Assumes count will always be > 1.
   // Also assumes min value of 0.0 when using nStep option.
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
-  case class mergeStddevStats(colName: String, nSteps: Option[Long] = None) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
+  case class mergeStddevStats(
+      colName: String,
+      nSteps: Option[Long] = None
+  ) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
         count = 0,
@@ -128,24 +134,32 @@ object StreamingStatsAggs {
     }
 
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-    def reduce(currentStddevStats: IntermediateStddevStats, row: Row): IntermediateStddevStats = {
+    def reduce(
+        currentStddevStats: IntermediateStddevStats,
+        row: Row
+    ): IntermediateStddevStats = {
       val oldStddevStats = getNestedRowValue[IntermediateStddevStats](row, colName)
         .getOrElse(None)
-        .asInstanceOf[IntermediateStddevStats]
-      
-      if oldStddevStats {
-        mergeStddevStats(currentStddevStats, stddevStats2)
+        .asInstanceOf[Option[IntermediateStddevStats]]
+
+      if (oldStddevStats.isDefined) {
+        Udfs.mergeStddevStats(oldStddevStats.get, currentStddevStats)
       } else {
         currentStddevStats
       }
     }
 
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-    def merge(stddevStats1: IntermediateStddevStats, stddevStats2: IntermediateStddevStats): IntermediateStddevStats = {
-      mergeStddevStats(stddevStats1, stddevStats2)
+    def merge(
+        stddevStats1: IntermediateStddevStats,
+        stddevStats2: IntermediateStddevStats
+    ): IntermediateStddevStats = {
+      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
-    def finish(stddevStats: IntermediateStddevStats): IntermediateStddevStats = {
+    def finish(
+        stddevStats: IntermediateStddevStats
+    ): IntermediateStddevStats = {
       if (nSteps.isEmpty) {
         stddevStats
       } else {
@@ -161,7 +175,7 @@ object StreamingStatsAggs {
         val newMean = stddevStats.mean * stddevStats.count / nSteps.get
 
         val newM2 = if (missingSteps > 0) {
-          stddevStats.m2 + 0.0 + pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
+          stddevStats.m2 + 0.0 + math.pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
         } else {
           stddevStats.m2
         }
@@ -181,11 +195,14 @@ object StreamingStatsAggs {
 
     def outputEncoder: Encoder[IntermediateStddevStats] = ExpressionEncoder()
   }
-  
+
   // Assumes count will always be > 1.
   // Also assumes min value of 0.0 when using nStep option.
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
-  case class mergeStddevStatsToClass(colName: String, nSteps: Option[Long] = None) extends Aggregator[Row, IntermediateStddevStats, StddevStats] with Serializable {
+  case class mergeStddevStatsToClass(
+      colName: String,
+      nSteps: Option[Long] = None
+  ) extends Aggregator[Row, IntermediateStddevStats, StddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
         count = 0,
@@ -198,24 +215,32 @@ object StreamingStatsAggs {
     }
 
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-    def reduce(currentStddevStats: IntermediateStddevStats, row: Row): IntermediateStddevStats = {
+    def reduce(
+        currentStddevStats: IntermediateStddevStats,
+        row: Row
+    ): IntermediateStddevStats = {
       val oldStddevStats = getNestedRowValue[IntermediateStddevStats](row, colName)
         .getOrElse(None)
-        .asInstanceOf[IntermediateStddevStats]
-      
-      if oldStddevStats {
-        mergeStddevStats(currentStddevStats, stddevStats2)
+        .asInstanceOf[Option[IntermediateStddevStats]]
+
+      if (oldStddevStats.isDefined) {
+        Udfs.mergeStddevStats(oldStddevStats.get, currentStddevStats)
       } else {
         currentStddevStats
       }
     }
 
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-    def merge(stddevStats1: IntermediateStddevStats, stddevStats2: IntermediateStddevStats): IntermediateStddevStats = {
-      mergeStddevStats(stddevStats1, stddevStats2)
+    def merge(
+        stddevStats1: IntermediateStddevStats,
+        stddevStats2: IntermediateStddevStats
+    ): IntermediateStddevStats = {
+      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
-    def finish(stddevStats: IntermediateStddevStats): StddevStats = {
+    def finish(
+        stddevStats: IntermediateStddevStats
+    ): StddevStats = {
       val stats = if (nSteps.isEmpty) {
         stddevStats
       } else {
@@ -231,7 +256,7 @@ object StreamingStatsAggs {
         val newMean = stddevStats.mean * stddevStats.count / nSteps.get
 
         val newM2 = if (missingSteps > 0) {
-          stddevStats.m2 + 0.0 + pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
+          stddevStats.m2 + 0.0 + math.pow(delta, 2.0) * stddevStats.count * missingSteps / nSteps.get
         } else {
           stddevStats.m2
         }
@@ -246,7 +271,7 @@ object StreamingStatsAggs {
         )
       }
 
-      stddevStatsClass(stats)
+      Udfs.stddevStatsClass(stats)
     }
 
     def bufferEncoder: Encoder[IntermediateStddevStats] = ExpressionEncoder()

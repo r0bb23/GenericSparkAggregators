@@ -2,6 +2,7 @@ package com.rbb.gsaggs.aggregators
 
 import com.rbb.gsaggs.CaseClasses.FreqSketch
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
+import com.rbb.gsaggs.udfs.FreqSketchUdfs
 import com.yahoo.memory.Memory
 import com.yahoo.sketches.ArrayOfStringsSerDe
 import com.yahoo.sketches.frequencies.ItemsSketch
@@ -9,7 +10,11 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.expressions.Aggregator
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{ Encoder, Encoders, Row }
+import org.apache.spark.sql.{
+  Encoder,
+  Encoders,
+  Row
+}
 import scala.collection.JavaConversions._
 
 object FreqSketchAggs extends Serializable {
@@ -24,12 +29,19 @@ object FreqSketchAggs extends Serializable {
   */
   val defaultMapSize = 512
 
-  case class toFreq(colNames: List[String], flatten: Boolean = false, mapSize: Int = defaultMapSize) extends Aggregator[Row, ItemsSketch[String], Array[Byte]] with Serializable {
+  case class toFreq(
+      colNames: List[String],
+      flatten: Boolean = false,
+      mapSize: Int = defaultMapSize
+  ) extends Aggregator[Row, ItemsSketch[String], Array[Byte]] with Serializable {
     def zero: ItemsSketch[String] = {
       new ItemsSketch[String](mapSize)
     }
 
-    def reduce(freq: ItemsSketch[String], row: Row): ItemsSketch[String] = {
+    def reduce(
+        freq: ItemsSketch[String],
+        row: Row
+    ): ItemsSketch[String] = {
       if (!flatten) {
         val key = colNames.map(colName => getNestedRowValue[Any](row, colName).getOrElse("NaN").toString).mkString("_")
         freq.update(key)
@@ -42,12 +54,17 @@ object FreqSketchAggs extends Serializable {
       freq
     }
 
-    def merge(freq1: ItemsSketch[String], freq2: ItemsSketch[String]): ItemsSketch[String] = {
+    def merge(
+        freq1: ItemsSketch[String],
+        freq2: ItemsSketch[String]
+    ): ItemsSketch[String] = {
       freq1.merge(freq2)
       freq1
     }
 
-    def finish(freq: ItemsSketch[String]): Array[Byte] = {
+    def finish(
+        freq: ItemsSketch[String]
+    ): Array[Byte] = {
       freq.toByteArray(new ArrayOfStringsSerDe())
     }
 
@@ -56,12 +73,18 @@ object FreqSketchAggs extends Serializable {
     def outputEncoder: Encoder[Array[Byte]] = Encoders.BINARY
   }
 
-  case class mergeFreqs(colName: String, mapSize: Int = defaultMapSize) extends Aggregator[Row, ItemsSketch[String], Array[Byte]] with Serializable {
+  case class mergeFreqs(
+      colName: String,
+      mapSize: Int = defaultMapSize
+  ) extends Aggregator[Row, ItemsSketch[String], Array[Byte]] with Serializable {
     def zero: ItemsSketch[String] = {
       new ItemsSketch[String](mapSize)
     }
 
-    def reduce(freqCurrent: ItemsSketch[String], row: Row): ItemsSketch[String] = {
+    def reduce(
+        freqCurrent: ItemsSketch[String],
+        row: Row
+    ): ItemsSketch[String] = {
       val freqArray = getNestedRowValue[Array[Byte]](row, colName)
       if (freqArray.isDefined) {
         val freqOld = ItemsSketch.getInstance(Memory.wrap(freqArray.get), new ArrayOfStringsSerDe())
@@ -70,12 +93,17 @@ object FreqSketchAggs extends Serializable {
       freqCurrent
     }
 
-    def merge(freq1: ItemsSketch[String], freq2: ItemsSketch[String]): ItemsSketch[String] = {
+    def merge(
+        freq1: ItemsSketch[String],
+        freq2: ItemsSketch[String]
+    ): ItemsSketch[String] = {
       freq1.merge(freq2)
       freq1
     }
 
-    def finish(freq: ItemsSketch[String]): Array[Byte] = {
+    def finish(
+        freq: ItemsSketch[String]
+    ): Array[Byte] = {
       freq.toByteArray(new ArrayOfStringsSerDe())
     }
 
@@ -84,12 +112,18 @@ object FreqSketchAggs extends Serializable {
     def outputEncoder: Encoder[Array[Byte]] = { Encoders.BINARY }
   }
 
-  case class mergeFreqsToClass(colName: String, mapSize: Int = defaultMapSize) extends Aggregator[Row, ItemsSketch[String], List[FreqSketch]] with Serializable {
+  case class mergeFreqsToClass(
+      colName: String,
+      mapSize: Int = defaultMapSize
+  ) extends Aggregator[Row, ItemsSketch[String], List[FreqSketch]] with Serializable {
     def zero: ItemsSketch[String] = {
       new ItemsSketch[String](mapSize)
     }
-  
-    def reduce(freqCurrent: ItemsSketch[String], row: Row): ItemsSketch[String] = {
+
+    def reduce(
+        freqCurrent: ItemsSketch[String],
+        row: Row
+    ): ItemsSketch[String] = {
       val freqArray = getNestedRowValue[Array[Byte]](row, colName)
       if (freqArray.isDefined) {
         val freqOld = ItemsSketch.getInstance(Memory.wrap(freqArray.get), new ArrayOfStringsSerDe())
@@ -97,18 +131,23 @@ object FreqSketchAggs extends Serializable {
       }
       freqCurrent
     }
-  
-    def merge(freq1: ItemsSketch[String], freq2: ItemsSketch[String]): ItemsSketch[String] = {
+
+    def merge(
+        freq1: ItemsSketch[String],
+        freq2: ItemsSketch[String]
+    ): ItemsSketch[String] = {
       freq1.merge(freq2)
       freq1
     }
-  
-    def finish(freq: ItemsSketch[String]): List[FreqSketch] = {
+
+    def finish(
+        freq: ItemsSketch[String]
+    ): List[FreqSketch] = {
       FreqSketchUdfs.freqSketchToFreqSketch(freq)
     }
-  
+
     def bufferEncoder: Encoder[ItemsSketch[String]] = Encoders.kryo[ItemsSketch[String]]
-  
+
     def outputEncoder: Encoder[List[FreqSketch]] = ExpressionEncoder()
   }
 }
