@@ -1,4 +1,5 @@
 import scala.sys.process.Process
+import org.scoverage.coveralls.Imports.CoverallsKeys._
 
 lazy val commonSettings: Seq[Def.Setting[_]] = Defaults.coreDefaultSettings ++ Seq(
   organization := "com.rbb",
@@ -15,7 +16,9 @@ lazy val commonSettings: Seq[Def.Setting[_]] = Defaults.coreDefaultSettings ++ S
     <exclude module="jmxtools"/>
     <exclude module="jmxri"/>
     </dependencies>,
-  scalariformAutoformat := false
+  scalariformAutoformat := false,
+  coverageEnabled := true,
+  coverallsToken := sys.env.get("COVERALLS_GSAGGS_TOKEN"),
 )
 
 lazy val rootSettings = Seq(
