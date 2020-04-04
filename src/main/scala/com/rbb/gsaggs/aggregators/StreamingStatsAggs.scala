@@ -6,7 +6,7 @@ import com.rbb.gsaggs.CaseClasses.{
 }
 import com.rbb.gsaggs.Exceptions.NotValidValue
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
-import com.rbb.gsaggs.udfs.Udfs
+import com.rbb.gsaggs.udfs.StreamingStatsUDFS
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.expressions.Aggregator
@@ -73,7 +73,7 @@ object StreamingStatsAggs {
         stddevStats1: IntermediateStddevStats,
         stddevStats2: IntermediateStddevStats
     ): IntermediateStddevStats = {
-      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
+      StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
@@ -143,7 +143,7 @@ object StreamingStatsAggs {
         .asInstanceOf[Option[IntermediateStddevStats]]
 
       if (oldStddevStats.isDefined) {
-        Udfs.mergeStddevStats(oldStddevStats.get, currentStddevStats)
+        StreamingStatsUDFS.mergeStddevStats(oldStddevStats.get, currentStddevStats)
       } else {
         currentStddevStats
       }
@@ -154,7 +154,7 @@ object StreamingStatsAggs {
         stddevStats1: IntermediateStddevStats,
         stddevStats2: IntermediateStddevStats
     ): IntermediateStddevStats = {
-      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
+      StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
@@ -224,7 +224,7 @@ object StreamingStatsAggs {
         .asInstanceOf[Option[IntermediateStddevStats]]
 
       if (oldStddevStats.isDefined) {
-        Udfs.mergeStddevStats(oldStddevStats.get, currentStddevStats)
+        StreamingStatsUDFS.mergeStddevStats(oldStddevStats.get, currentStddevStats)
       } else {
         currentStddevStats
       }
@@ -235,7 +235,7 @@ object StreamingStatsAggs {
         stddevStats1: IntermediateStddevStats,
         stddevStats2: IntermediateStddevStats
     ): IntermediateStddevStats = {
-      Udfs.mergeStddevStats(stddevStats1, stddevStats2)
+      StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
@@ -271,7 +271,7 @@ object StreamingStatsAggs {
         )
       }
 
-      Udfs.stddevStatsClass(stats)
+      StreamingStatsUDFS.stddevStatsClass(stats)
     }
 
     def bufferEncoder: Encoder[IntermediateStddevStats] = ExpressionEncoder()

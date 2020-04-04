@@ -2,7 +2,7 @@ package com.rbb.gsaggs.aggregators
 
 import com.rbb.gsaggs.CaseClasses.FreqSketch
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
-import com.rbb.gsaggs.udfs.FreqSketchUdfs
+import com.rbb.gsaggs.udfs.FreqSketchUDFS
 import com.yahoo.memory.Memory
 import com.yahoo.sketches.ArrayOfStringsSerDe
 import com.yahoo.sketches.frequencies.ItemsSketch
@@ -143,7 +143,7 @@ object FreqSketchAggs extends Serializable {
     def finish(
         freq: ItemsSketch[String]
     ): List[FreqSketch] = {
-      FreqSketchUdfs.freqSketchToFreqSketch(freq)
+      FreqSketchUDFS.freqSketchToFreqSketch(freq)
     }
 
     def bufferEncoder: Encoder[ItemsSketch[String]] = Encoders.kryo[ItemsSketch[String]]

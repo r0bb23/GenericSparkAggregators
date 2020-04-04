@@ -7,7 +7,7 @@ import com.tdunning.math.stats.{
   MergingDigest,
   TDigest
 }
-import com.rbb.gsaggs.udfs.Udfs
+import com.rbb.gsaggs.udfs.TDigestUDFS
 import java.nio.ByteBuffer
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
@@ -109,7 +109,7 @@ object TDigestAggs {
         throw new NotValidValue(s"Your nSteps (${nSteps.get}) is smaller than your field count (${tDigest.size}). Check your query logic and nSteps choice.")
       }
 
-      Udfs.getHistogramAndPercentiles(tDigest)
+      TDigestUDFS.getHistogramAndPercentiles(tDigest)
     }
 
     def bufferEncoder: Encoder[TDigest] = Encoders.kryo[TDigest]

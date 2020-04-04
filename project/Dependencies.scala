@@ -14,18 +14,15 @@ object Dependencies {
 
     val analyticsDeps = Seq(
         "org.scalanlp" %% "breeze" % breezeVer,
-        "mozilla" % "spark-hyperloglog" % hyperloglogVer,
         "com.tdunning" % "t-digest" % tdigestVer,
         "com.yahoo.datasketches" % "sketches-core" % yahooSketches,
-        "com.twitter" %% "algebird-core" % algebirdVer,
-        "com.rockymadden.stringmetric" %% "stringmetric-core" % stringmetricVer,
+        "com.github.halfmatthalfcat" %% "stringmetric-core" % stringmetricVer,
         "io.sgr" % "s2-geometry-library-java" % s2GeometryVer,
         "com.datadoghq" % "sketches-java" % ddSketchVer,
     )
-    
+
     val repos = Seq(
         "Typesafe" at "https://repo.typesafe.com/typesafe/releases/",
-        "Java.net Maven2 Repository" at "https://download.java.net/maven/2/",
-        "Spark Packages" at "https://dl.bintray.com/spark-packages/maven/",
+        "Java.net Maven2 Repository" at "https://download.java.net/maven/2/"
     )
 }

@@ -74,6 +74,6 @@ lazy val root = (project in file("."))
 
 val parentPath = file(".").getAbsoluteFile.getParentFile
 lazy val assemblyJarPath = s"${parentPath}/commands/spark/"
-lazy val assemblyJarFilename = s"gsaggs_2.11-${Versions.gsaggsVer}.jar"
+lazy val assemblyJarFilename = s"gsaggs_2.12-${Versions.gsaggsVer}.jar"
 
 assemblyOutputPath in assembly := file(assemblyJarPath + assemblyJarFilename)
