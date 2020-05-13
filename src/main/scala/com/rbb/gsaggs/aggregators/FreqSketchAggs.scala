@@ -3,9 +3,9 @@ package com.rbb.gsaggs.aggregators
 import com.rbb.gsaggs.CaseClasses.FreqSketch
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
 import com.rbb.gsaggs.udfs.FreqSketchUDFS
-import com.yahoo.memory.Memory
-import com.yahoo.sketches.ArrayOfStringsSerDe
-import com.yahoo.sketches.frequencies.ItemsSketch
+import org.apache.datasketches.memory.Memory
+import org.apache.datasketches.ArrayOfStringsSerDe
+import org.apache.datasketches.frequencies.ItemsSketch
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.expressions.Aggregator

@@ -8,7 +8,7 @@ https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark
 
 sbt help
 > https://www.scala-sbt.org/1.x/docs/Running.html#Common+commands
-- launch with `sbt` in directoru with build.sbt
+- launch with `sbt` in directory with build.sbt
 - `test` for tests
 - `reload` if any changes to `build.sbt`
 - `update` to rebuild after reload
@@ -36,8 +36,6 @@ import com.tdunning.math.stats.{
   MergingDigest,
   TDigest
 }
-import com.yahoo.sketches.ArrayOfStringsSerDe
-import com.yahoo.sketches.frequencies.ItemsSketch
 import java.io._
 import java.io.BufferedInputStream
 import java.io.File
@@ -60,6 +58,8 @@ import java.util.function.{
 import java.util.stream.Collectors
 import java.util.zip.GZIPInputStream
 import org.apache.commons.math3.stat.Frequency
+import org.apache.datasketches.ArrayOfStringsSerDe
+import org.apache.datasketches.frequencies.ItemsSketch
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{

@@ -49,8 +49,9 @@ lazy val root = (project in file("."))
       Logger.getLogger("akka").setLevel(Level.OFF)
 
       val spark = SparkSession.builder()
-        .master("local[2]")
+        .master("local")
         .appName("spark-shell")
+        .config("spark.driver.bindAddress", "127.0.0.1")
         .getOrCreate()
       import spark.implicits._
       val sc = spark.sparkContext

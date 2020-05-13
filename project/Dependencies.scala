@@ -15,7 +15,7 @@ object Dependencies {
     val analyticsDeps = Seq(
         "org.scalanlp" %% "breeze" % breezeVer,
         "com.tdunning" % "t-digest" % tdigestVer,
-        "com.yahoo.datasketches" % "sketches-core" % yahooSketches,
+        "org.apache.datasketches" % "datasketches-java" % apacheSketches,
         "com.github.halfmatthalfcat" %% "stringmetric-core" % stringmetricVer,
         "io.sgr" % "s2-geometry-library-java" % s2GeometryVer,
         "com.datadoghq" % "sketches-java" % ddSketchVer,
