@@ -56,7 +56,9 @@ object FreqSketchUDFS {
       freq: ItemsSketch[String]
   ): List[FreqSketch] = {
     val freqItems = freq.getFrequentItems(errorType)
-    val freqEstimatesSum = freqItems.foldLeft(0L) { (sum, row) => sum + row.getEstimate }.toDouble
+    val freqEstimatesSum = freqItems.foldLeft(0L) {
+      (sum, row) => sum + row.getEstimate
+    }.toDouble
 
     val freqs = freqItems.map {
       row =>

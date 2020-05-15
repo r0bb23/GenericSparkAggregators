@@ -3,6 +3,7 @@ package com.rbb.gsaggs.udafs
 import org.apache.datasketches.memory.Memory
 import org.apache.datasketches.ArrayOfStringsSerDe
 import org.apache.datasketches.frequencies.ItemsSketch
+import org.apache.datasketches.fdt.FdtSketch
 import org.apache.spark.sql.expressions.{
   MutableAggregationBuffer,
   UserDefinedAggregateFunction,
@@ -22,8 +23,12 @@ object FreqSketchUDAFS {
   * rate for most of our data types.
   */
   val defaultMapSize = 512
+  val defaultThreshold = 0.1
+  val defualtRSE = 0.5
 
-  class toFreq(mapSize: Int = defaultMapSize) extends UserDefinedAggregateFunction {
+  class toFreq(
+      mapSize: Int = defaultMapSize,
+  ) extends UserDefinedAggregateFunction {
     override def inputSchema: StructType =
       StructType(StructField("value", StringType) :: Nil)
 
