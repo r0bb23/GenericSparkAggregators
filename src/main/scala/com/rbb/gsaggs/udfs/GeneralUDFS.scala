@@ -18,23 +18,7 @@ import scala.collection.JavaConversions._
 import scala.math
 
 object GeneralUDFS {
-  // https://github.com/vitillo/spark-hyperloglog/blob/master/src/main/scala/com/mozilla/spark/sql/hyperloglog/functions/package.scala
-  // val hllCreateUdf = udf((s: String, b: Int) => hllCreate(s, b))
-
   val flattenUdf = udf((x: Seq[Seq[String]]) => x.flatten.distinct)
-
-  // def hllConverter(
-  //     data: Either[List[Int],
-  //     List[String]]
-  // ): Array[Byte] = {
-  //   val hllMonoid = new HyperLogLogMonoid(bits = 12)
-  //   val hlls = data match {
-  //     case Left(dataInt) => dataInt.map { x => hllMonoid.create(HyperLogLog.toBytes(hllMonoid.toHLL(x))) }
-  //     case Right(dataString) => dataString.map { x => hllMonoid.create(HyperLogLog.toBytes(hllMonoid.toHLL(x))) }
-  //   }
-  //   val combinedHll = hllMonoid.sum(hlls)
-  //   HyperLogLog.toBytes(combinedHll)
-  // }
 
   def numericToDouble(
       num: Number
