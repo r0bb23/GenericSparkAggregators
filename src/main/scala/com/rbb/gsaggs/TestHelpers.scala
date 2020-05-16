@@ -60,6 +60,7 @@ import java.util.zip.GZIPInputStream
 import org.apache.commons.math3.stat.Frequency
 import org.apache.datasketches.ArrayOfStringsSerDe
 import org.apache.datasketches.frequencies.ItemsSketch
+import org.apache.datasketches.hll.HllSketch
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{
@@ -350,6 +351,15 @@ object TestHelpers {
     val tdigestBuffer = ByteBuffer.allocate(tdigest.smallByteSize())
     tdigest.asSmallBytes(tdigestBuffer)
     tdigestBuffer.array()
+  }
+
+  def toHLL(
+      values: Seq[String]
+  ): Array[Byte] = {
+    val hll = new HllSketch(10)
+    values.foreach(value => hll.update(value))
+
+    hll.toCompactByteArray()
   }
 
   def randGauss(
