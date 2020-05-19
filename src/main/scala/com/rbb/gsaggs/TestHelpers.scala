@@ -1,40 +1,19 @@
 package com.rbb.gsaggs
 
-/*
-Also see built ins:
-
-https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark/TestUtils.scala
-https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark/util/Utils.scala
-
-sbt help
-> https://www.scala-sbt.org/1.x/docs/Running.html#Common+commands
-- launch with `sbt` in directory with build.sbt
-- `test` for tests
-- `reload` if any changes to `build.sbt`
-- `update` to rebuild after reload
-
-scalatest
-> http://www.scalatest.org/user_guide/using_assertions
-
-
-https://spark.apache.org/docs/latest/sql-programming-guide.html#hive-tables
-- spark.sql.warehouse.dir to set up hive table location
-
-*/
 import breeze.linalg.DenseMatrix
 import breeze.stats.distributions.{
   Beta,
   Gaussian,
-  RandBasis
+  RandBasis,
 }
 import collection.JavaConverters._
 import com.rbb.gsaggs.ScalaHelpers.{
   byteArrayToObject,
-  objectToByteArray
+  objectToByteArray,
 }
 import com.tdunning.math.stats.{
   MergingDigest,
-  TDigest
+  TDigest,
 }
 import java.io._
 import java.io.BufferedInputStream
@@ -44,33 +23,36 @@ import java.nio.file.{
   FileSystems,
   Files,
   Path,
-  Paths
+  Paths,
 }
 import java.util.{
   List => JList,
-  UUID
+  UUID,
 }
 import java.util.function.{
   BiPredicate,
   Function => JFunction,
-  Predicate => JPredicate
+  Predicate => JPredicate,
 }
 import java.util.stream.Collectors
 import java.util.zip.GZIPInputStream
 import org.apache.commons.math3.stat.Frequency
 import org.apache.datasketches.ArrayOfStringsSerDe
 import org.apache.datasketches.frequencies.ItemsSketch
-import org.apache.datasketches.hll.HllSketch
+import org.apache.datasketches.hll.{
+  HllSketch,
+  Union,
+}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{
   Dataset,
   Row,
-  SparkSession
+  SparkSession,
 }
 import org.apache.spark.sql.types.{
   DataType,
-  StructType
+  StructType,
 }
 import org.scalatest._
 
@@ -84,7 +66,7 @@ import org.scalatest._
  */
 object ResourceHelpers {
   def readResourcePerLine(
-      file: String
+      file: String,
   )(implicit ss: SparkSession): Dataset[String] = {
     import ss.implicits._
     val stream = this.getClass.getResourceAsStream(s"/$file")
@@ -95,7 +77,7 @@ object ResourceHelpers {
   }
 
   def readResourceAsString(
-      file: String
+      file: String,
   ): String = {
     val stream = this.getClass.getResourceAsStream(s"/$file")
     scala.io.Source.fromInputStream(stream)
@@ -103,14 +85,14 @@ object ResourceHelpers {
   }
 
   def readCSVResourceAsDataset(
-      file: String
+      file: String,
   )(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
     ss.read.csv(readResourcePerLine(file))
   }
 
   def readCSVResourceAsDataFrame(
       file: String,
-      header: String = "true"
+      header: String = "true",
   )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$file").toString
     val path = java.net.URLDecoder.decode(urlPath, "UTF-8")
@@ -123,7 +105,7 @@ object ResourceHelpers {
   def readParquetResourceAsDataFrame(
       dataFile: String,
       schemaJsonFile: String = null,
-      compressionType: String = "snappy"
+      compressionType: String = "snappy",
   )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$dataFile").toString
     val path = java.net.URLDecoder.decode(urlPath, "UTF-8")
@@ -138,7 +120,7 @@ object ResourceHelpers {
   }
 
   def readJsonResourceAsDataset(
-      file: String
+      file: String,
   )(implicit ss: SparkSession, sc: SparkContext): Dataset[Row] = {
     ss.read.json(readResourcePerLine(file))
   }
@@ -159,31 +141,31 @@ object ResourceHelpers {
     }
 */
 trait TempDir extends BeforeAndAfterEach { this: Suite =>
-  var tempDir: File = _
-  var clearAfterTest: Boolean = false
+    var tempDir: File = _
+    var clearAfterTest: Boolean = false
 
-  // Create a function so we can quickly override
-  // If the user simply returns a `File` object, it will stick around for debugging
-  def getTmpDir(): File = {
-    clearAfterTest = true
-    Utils.createTempDir()
-  }
+    // Create a function so we can quickly override
+    // If the user simply returns a `File` object, it will stick around for debugging
+    def getTmpDir(): File = {
+      clearAfterTest = true
+      Utils.createTempDir()
+    }
 
-  override def beforeEach() {
-    super.beforeEach()
-    tempDir = getTmpDir()
-  }
+    override def beforeEach() {
+      super.beforeEach()
+      tempDir = getTmpDir()
+    }
 
-  override def afterEach() {
-    try {
-      if (clearAfterTest) {
-        Utils.deleteRecursively(tempDir)
+    override def afterEach() {
+      try {
+        if (clearAfterTest) {
+          Utils.deleteRecursively(tempDir)
+        }
+      }
+      finally {
+        super.afterEach()
       }
     }
-    finally {
-      super.afterEach()
-    }
-  }
 }
 
 /**
@@ -209,7 +191,7 @@ object Utils {
     */
   def createTempDir(
       root: String = System.getProperty("java.io.tmpdir"),
-      namePrefix: String = "test-spark"
+      namePrefix: String = "test-spark",
   ): File = {
     val dir = new File(root, namePrefix + "-" + UUID.randomUUID.toString)
     dir.getCanonicalFile
@@ -221,7 +203,7 @@ object Utils {
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1009
     */
   def deleteRecursively(
-    file: File
+    file: File,
   ): Unit = {
     if (file != null) {
       try {
@@ -258,7 +240,7 @@ object Utils {
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1041
     */
   def listFilesSafely(
-      file: File
+      file: File,
   ): Seq[File] = {
     if (file.exists()) {
       val files = file.listFiles()
@@ -278,7 +260,7 @@ object Utils {
     * Based off: https://github.com/apache/spark/blob/branch-2.2/core/src/main/scala/org/apache/spark/util/Utils.scala#L1041
     */
   def isSymlink(
-      file: File
+      file: File,
   ): Boolean = {
     return Files.isSymbolicLink(Paths.get(file.toURI))
   }
@@ -295,13 +277,13 @@ object Utils {
     *
     */
   def toJavaFunction[AType, BType](
-      f: Function1[AType, BType]
+      f: Function1[AType, BType],
   ) = new JFunction[AType, BType] {
     override def apply(a: AType): BType = f(a)
   }
 
   def toJavaPredicate[AType](
-      f: Function1[AType, Boolean]
+      f: Function1[AType, Boolean],
   ) = new JPredicate[AType] {
     override def test(a: AType): Boolean = f(a)
   }
@@ -313,7 +295,7 @@ object Utils {
   // Note that this also doesn't take a filesystem, so doesn't work for HDFS.
   def getMatchingFiles(
       basedir: Path,
-      filterFn: (Path) => Boolean
+      filterFn: (Path) => Boolean,
   ): List[Path] = {
     Files.walk(basedir.normalize)
       .filter(Utils.toJavaPredicate(filterFn))
@@ -324,17 +306,8 @@ object Utils {
 }
 
 object TestHelpers {
-  def toFrequency(
-      keys: Seq[String]
-  ): Array[Byte] = {
-    val freq = new Frequency()
-    keys.foreach(key => freq.addValue(key))
-
-    objectToByteArray(freq)
-  }
-
   def toSketchFrequency(
-      keys: Seq[String]
+      keys: Seq[String],
   ): Array[Byte] = {
     val freq = new ItemsSketch[String](512)
     keys.foreach(key => freq.update(key))
@@ -343,7 +316,7 @@ object TestHelpers {
   }
 
   def toTdigest(
-      values: Seq[Double]
+      values: Seq[Double],
   ): Array[Byte] = {
     val tdigest = TDigest.createMergingDigest(100)
     values.foreach(value => tdigest.add(value))
@@ -354,9 +327,10 @@ object TestHelpers {
   }
 
   def toHLL(
-      values: Seq[String]
+      values: Seq[String],
+      logK:   Int = 10,
   ): Array[Byte] = {
-    val hll = new HllSketch(10)
+    val hll = new Union(logK)
     values.foreach(value => hll.update(value))
 
     hll.toCompactByteArray()
@@ -375,7 +349,7 @@ object TestHelpers {
       sampleSize: Int = 50,
       alpha: Double = 2.0,
       beta: Double = 2.0,
-      seed: Int = 1234
+      seed: Int = 1234,
   ): Seq[Double] = {
     new Beta(alpha, beta)(RandBasis.withSeed(seed)).sample(sampleSize).toSeq
   }
@@ -385,7 +359,7 @@ object TestHelpers {
       sampleSize: Int = 50,
       alpha: Double = 2.0,
       beta: Double = 2.0,
-      seed: Int = 1234
+      seed: Int = 1234,
   ): Seq[String] = {
     val betaSeq = randBeta(sampleSize = sampleSize, seed = seed)
 
