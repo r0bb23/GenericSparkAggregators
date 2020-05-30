@@ -4,11 +4,11 @@ import com.rbb.gsaggs.CaseClasses.{
   Histogram,
   HistogramAndPercentiles,
   HistogramAndStats,
-  Stats
+  Stats,
 }
 import com.tdunning.math.stats.{
   MergingDigest,
-  TDigest
+  TDigest,
 }
 import java.nio.ByteBuffer
 import org.apache.spark.sql.functions.udf
@@ -17,7 +17,7 @@ import scala.math
 
 object TDigestUDFS {
   def tdigestArrayToObject(
-      tDigestArray: Array[Byte]
+      tDigestArray: Array[Byte],
   ): TDigest = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
@@ -29,7 +29,7 @@ object TDigestUDFS {
 
   def tdigestKSTest(
       tdigestModelArray: Array[Byte],
-      tdigestTestArray: Array[Byte]
+      tdigestTestArray:  Array[Byte],
   ): Double = {
     val tdigestModel = tdigestArrayToObject(tdigestModelArray)
     val tdigestTest = tdigestArrayToObject(tdigestTestArray)
@@ -56,7 +56,7 @@ object TDigestUDFS {
 
   def tdigestCdfScore(
       tdigestModelArray: Array[Byte],
-      value: Double
+      value:             Double,
   ): Double = {
     val tdigestModel = tdigestArrayToObject(tdigestModelArray)
     val outlierScore = tdigestModel.cdf(value)
@@ -67,8 +67,8 @@ object TDigestUDFS {
   val tdigestCdfScoreUdf = udf((tdigestModelArray: Array[Byte], value: Double) => tdigestCdfScore(tdigestModelArray, value))
 
   def getHistogramAndStats(
-      tDigest: TDigest,
-      isZeroBounded: Boolean = true
+      tDigest:       TDigest,
+      isZeroBounded: Boolean = true,
   ): HistogramAndStats = {
     val histogramArray = for (centroid <- tDigest.centroids.asScala)
       yield Histogram(
@@ -111,8 +111,8 @@ object TDigestUDFS {
   }
 
   def getHistogramAndPercentiles(
-      tDigest: TDigest,
-      isZeroBounded: Boolean = true
+      tDigest:       TDigest,
+      isZeroBounded: Boolean = true,
   ): HistogramAndPercentiles = {
     val histogramArray = for (centroid <- tDigest.centroids.asScala)
       yield Histogram(
@@ -147,7 +147,7 @@ object TDigestUDFS {
   }
 
   def toHistogramAndStats(
-      tDigestArray: Array[Byte]
+      tDigestArray: Array[Byte],
   ): HistogramAndStats = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
@@ -160,7 +160,7 @@ object TDigestUDFS {
   val toHistogramAndStatsUdf = udf((tDigestArray: Array[Byte]) => toHistogramAndStats(tDigestArray))
 
   def toHistogramAndPercentiles(
-      tDigestArray: Array[Byte]
+      tDigestArray: Array[Byte],
   ): HistogramAndPercentiles = {
     val buffer = ByteBuffer.allocate(tDigestArray.length)
     buffer.put(ByteBuffer.wrap(tDigestArray))
@@ -171,7 +171,7 @@ object TDigestUDFS {
   }
 
   def createTDigestFromVal[ValueType](
-      value: ValueType
+      value: ValueType,
   ): Array[Byte] = {
     val tDigest = TDigest.createMergingDigest(100)
     tDigest.add(value.asInstanceOf[Number].doubleValue)
@@ -191,7 +191,7 @@ object TDigestUDFS {
   }
 
   def createTDigest[DateType](
-      data: Seq[DateType]
+      data: Seq[DateType],
   ): Array[Byte] = {
     val tDigest = TDigest.createMergingDigest(100)
     data.foreach(value => tDigest.add(value.asInstanceOf[Number].doubleValue))
@@ -203,7 +203,7 @@ object TDigestUDFS {
   }
 
   def mergeTDigest(
-      tDigests: Seq[Array[Byte]]
+      tDigests: Seq[Array[Byte]],
   ): Array[Byte] = {
     val mergedTDigest = TDigest.createMergingDigest(100)
     tDigests.foreach {

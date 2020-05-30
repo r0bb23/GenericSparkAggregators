@@ -24,7 +24,7 @@ object StreamingStatsAggs {
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
   case class toStddevStats(
       colName: String,
-      nSteps: Option[Long] = None
+      nSteps:  Option[Long] = None,
   ) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
@@ -40,7 +40,7 @@ object StreamingStatsAggs {
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
     def reduce(
         currentStddevStats: IntermediateStddevStats,
-        row: Row
+        row:                Row,
     ): IntermediateStddevStats = {
       val newValue = getNestedRowValue[Number](row, colName)
         .getOrElse(0.0)
@@ -71,13 +71,13 @@ object StreamingStatsAggs {
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
     def merge(
         stddevStats1: IntermediateStddevStats,
-        stddevStats2: IntermediateStddevStats
+        stddevStats2: IntermediateStddevStats,
     ): IntermediateStddevStats = {
       StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
-        stddevStats: IntermediateStddevStats
+        stddevStats: IntermediateStddevStats,
     ): IntermediateStddevStats = {
       if (nSteps.isEmpty) {
         stddevStats
@@ -120,7 +120,7 @@ object StreamingStatsAggs {
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
   case class mergeStddevStats(
       colName: String,
-      nSteps: Option[Long] = None
+      nSteps:  Option[Long] = None,
   ) extends Aggregator[Row, IntermediateStddevStats, IntermediateStddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
@@ -136,7 +136,7 @@ object StreamingStatsAggs {
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
     def reduce(
         currentStddevStats: IntermediateStddevStats,
-        row: Row
+        row:                Row,
     ): IntermediateStddevStats = {
       val oldStddevStats = getNestedRowValue[IntermediateStddevStats](row, colName)
         .getOrElse(None)
@@ -152,13 +152,13 @@ object StreamingStatsAggs {
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
     def merge(
         stddevStats1: IntermediateStddevStats,
-        stddevStats2: IntermediateStddevStats
+        stddevStats2: IntermediateStddevStats,
     ): IntermediateStddevStats = {
       StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
-        stddevStats: IntermediateStddevStats
+        stddevStats: IntermediateStddevStats,
     ): IntermediateStddevStats = {
       if (nSteps.isEmpty) {
         stddevStats
@@ -201,7 +201,7 @@ object StreamingStatsAggs {
   // In general, if either of those things breaks using this agg you should check to make sure something isn't wrong else where first.
   case class mergeStddevStatsToClass(
       colName: String,
-      nSteps: Option[Long] = None
+      nSteps:  Option[Long] = None,
   ) extends Aggregator[Row, IntermediateStddevStats, StddevStats] with Serializable {
     def zero: IntermediateStddevStats = {
       IntermediateStddevStats(
@@ -217,7 +217,7 @@ object StreamingStatsAggs {
     // Uses the following algorithm https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
     def reduce(
         currentStddevStats: IntermediateStddevStats,
-        row: Row
+        row:                Row,
     ): IntermediateStddevStats = {
       val oldStddevStats = getNestedRowValue[IntermediateStddevStats](row, colName)
         .getOrElse(None)
@@ -233,13 +233,13 @@ object StreamingStatsAggs {
     // Uses the following algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
     def merge(
         stddevStats1: IntermediateStddevStats,
-        stddevStats2: IntermediateStddevStats
+        stddevStats2: IntermediateStddevStats,
     ): IntermediateStddevStats = {
       StreamingStatsUDFS.mergeStddevStats(stddevStats1, stddevStats2)
     }
 
     def finish(
-        stddevStats: IntermediateStddevStats
+        stddevStats: IntermediateStddevStats,
     ): StddevStats = {
       val stats = if (nSteps.isEmpty) {
         stddevStats

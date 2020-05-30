@@ -7,30 +7,36 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types._
 import org.scalatest.FunSuite
 
+case class User(
+  user:    String,
+  cat_col: String
+)
+
 class DistinctSketchAggsTest extends FunSuite with DataFrameSuiteBase {
   test("To HLL Sketch Aggs test") {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
-    val test = sc.parallelize(List[(String, String)](
-      ("user1", "a"),
-      ("user1", "b"),
-      ("user1", "b"),
-      ("user2", "a"),
-      ("user3", "b"),
-      ("user3", "c"),
-    ))
-      .toDF("users", "cat_col")
-      .groupBy("users")
-      .agg(DistinctSketchAggs.toHLL("cat_col").toColumn.name("hll"))
-      .orderBy(col("users").asc)
+    val toHLL = new DistinctSketchAggs.ToHLL[String]("cat_col").toColumn.name("hll")
+
+    val test = List(
+      User("user1", "a"),
+      User("user1", "b"),
+      User("user1", "b"),
+      User("user2", "a"),
+      User("user3", "b"),
+      User("user3", "c"),
+    ).toDS
+      .groupBy("user")
+      .agg(toHLL)
+      .orderBy(col("user").asc)
 
     val actual = sc.parallelize(List[(String, Array[Byte])](
       ("user1", TestHelpers.toHLL(List("a", "b", "b"))),
       ("user2", TestHelpers.toHLL(List("a"))),
       ("user3", TestHelpers.toHLL(List("b", "c"))),
-    )).toDF("users", "hll")
-      .orderBy(col("users").asc)
+    )).toDF("user", "hll")
+      .orderBy(col("user").asc)
 
     assertDataFrameEquals(test, actual)
   }
@@ -39,19 +45,20 @@ class DistinctSketchAggsTest extends FunSuite with DataFrameSuiteBase {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
-    val test = sc.parallelize(List[(String, String)](
-      ("user1", "a"),
-      ("user1", "b"),
-      ("user1", "b"),
-      ("user2", "a"),
-      ("user3", "b"),
-      ("user3", "c"),
-    ))
-      .toDF("users", "cat_col")
-      .groupBy("users")
-      .agg(DistinctSketchAggs.toHLL("cat_col").toColumn.name("hll"))
-      .groupBy()
-      .agg(DistinctSketchAggs.mergeHLLs("hll").toColumn.name("hll"))
+    val toHLL = new DistinctSketchAggs.ToHLL[String]("cat_col").toColumn.name("hll")
+    val mergeHLLs = new DistinctSketchAggs.MergeHLLs("hll").toColumn.name("hll")
+
+    val test = List(
+      User("user1", "a"),
+      User("user1", "b"),
+      User("user1", "b"),
+      User("user2", "a"),
+      User("user3", "b"),
+      User("user3", "c"),
+    ).toDS
+      .groupBy("user")
+      .agg(toHLL)
+      .agg(mergeHLLs)
 
     val actual = sc.parallelize(List[Array[Byte]](
       TestHelpers.toHLL(List("a", "b", "b", "a", "b", "c"))

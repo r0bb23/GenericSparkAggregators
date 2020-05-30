@@ -6,22 +6,23 @@ import org.apache.spark.sql.functions.{
   col,
   hash,
   udf,
-  spark_partition_id
+  spark_partition_id,
 }
 import org.apache.spark.sql.types.{
   ArrayType,
   DataType,
   IntegerType,
   StringType,
-  StructType
+  StructType,
 }
 import org.apache.spark.sql.{
   Column,
   DataFrame,
   Row,
-  SparkSession
+  SparkSession,
 }
 import org.slf4j.LoggerFactory
+import scala.reflect.ClassTag
 
 object SparkDataFrameHelpers {
   val logger = LoggerFactory.getLogger(this.getClass.getName)
@@ -35,7 +36,7 @@ object SparkDataFrameHelpers {
   val colExpFunc = raw"""(\w+)\((\w+)\)\s+(?i)AS\s+(\w+)""".r
 
   def parseColumnExprs(
-      colExpr: String
+      colExpr: String,
   ): (String, String, String) = colExpr match {
     case colExpSimple(colName) => (null, colName, null)
     case colExpAlias(colName, alias) => (null, colName, alias)
@@ -43,7 +44,7 @@ object SparkDataFrameHelpers {
   }
 
   def extractColNamesFromExprs(
-      colExprs: List[String]
+      colExprs: List[String],
   ): List[String] = {
     colExprs.map(colExpr => {
       colExpr match {
@@ -58,7 +59,7 @@ object SparkDataFrameHelpers {
   // Often used in `foldLeft` statements
   def unionDF(
       df1: Option[DataFrame],
-      df2: DataFrame
+      df2: DataFrame,
   ): Option[DataFrame] = {
     if (df2 == null) {
       df1
@@ -70,13 +71,14 @@ object SparkDataFrameHelpers {
   }
 
   def deleteAllTempTables(
-      spark: SparkSession
+      spark: SparkSession,
   ) {
     spark.sqlContext.tables().filter("isTemporary == true").select("tableName").collect.foreach(tblName => spark.catalog.dropTempView(tblName(0).toString))
   }
 
-  def getNestedRowValue[ValueType](
-      row: Row, value: String
+  def getNestedRowValue[ValueType: ClassTag](
+      row:   Row,
+      value: String,
   ): Option[ValueType] = {
     val splitList = value.split("\\.", 2)
     if (row.schema == null) {
@@ -84,7 +86,7 @@ object SparkDataFrameHelpers {
     } else if (splitList.length == 1) {
       return Option(row.getAs[ValueType](splitList(0)))
     } else {
-      return getNestedRowValue(Option(row.getAs[Row](splitList(0))).getOrElse(Row()), splitList(1))
+      return getNestedRowValue[ValueType](Option(row.getAs[Row](splitList(0))).getOrElse(Row()), splitList(1))
     }
   }
 
@@ -100,24 +102,27 @@ object SparkDataFrameHelpers {
   /**
     *   Get the value of a row field as a certain type by name.
     */
-  def getRowVal[ValueType](r: Row, name: String): ValueType = {
+  def getRowVal[ValueType: ClassTag](
+      r:    Row,
+      name: String,
+  ): ValueType = {
     r.getAs[ValueType](r.fieldIndex(name))
   }
 
   def toBasicColName(
-      col: String
+      col: String,
   ): String = {
     return col.substring(col.lastIndexOf(".") + 1)
   }
 
   def toBasicColNames(
-      cols: List[String]
+      cols: List[String],
   ): List[String] = {
     return cols.map(col => toBasicColName(col))
   }
 
   def stringListsToCols(
-      stringLists: List[String]*
+      stringLists: List[String]*,
   ): List[Column] = {
     val strings = stringLists.flatten.toList
     return strings.map(element => col(element))
@@ -128,7 +133,7 @@ object SparkDataFrameHelpers {
     * idea size wrt available cores, and current number of partitions.
     */
   def optimalNumberOfPartitions(
-      dataset: DataFrame
+      dataset: DataFrame,
   ): Int = {
     import org.apache.spark.util.SizeEstimator
 
@@ -156,15 +161,15 @@ object SparkDataFrameHelpers {
 
   // Returns a dataframe with partition_id, ct
   def sizePerPartition(
-      df: DataFrame
+      df: DataFrame,
   ): DataFrame = {
     df.groupBy(spark_partition_id).count
   }
 
   def coalesce(
-      df: DataFrame,
-      rowCount: Long,
-      maxRowsPerPartition: Long = FileSystemGlobals.MAX_RECORDS_PER_FILE
+      df:                  DataFrame,
+      rowCount:            Long,
+      maxRowsPerPartition: Long = FileSystemGlobals.MAX_RECORDS_PER_FILE,
   ): DataFrame = {
     val partitionSize = rowCount / maxRowsPerPartition + 1
     if (df.rdd.partitions.size <= partitionSize) {
@@ -181,9 +186,11 @@ object SparkDataFrameHelpers {
     *  partitions by breaking writes into multiple smaller files (e.g. csv of key activity per tenant).
     */
   def repartition(
-      df:          DataFrame,
-      partColName: String, subPartColNames: Seq[String],
-      maxRecordsPerPartitionGroup: Int, npartitions: Option[Int] = None
+      df:                          DataFrame,
+      partColName:                 String,
+      subPartColNames:             Seq[String],
+      maxRecordsPerPartitionGroup: Int,
+      npartitions:                 Option[Int] = None,
   ): DataFrame = {
     val itemsPerGrouping = df
       .groupBy(partColName)
@@ -205,7 +212,7 @@ object SparkDataFrameHelpers {
       // https://stackoverflow.com/questions/42071362/spark-dataset-custom-partitioner
       def partitionByCol(
           partitionColVal: Any,
-          subPartHash: Int
+          subPartHash:     Int,
       ): Int = {
         // Calculate # parts for this
         val nparts = subPartitionsPerGrouping.value.getOrElse(partitionColVal, 1)
@@ -232,7 +239,7 @@ object SparkDataFrameHelpers {
   // Example usage: getBasicDataType(df.schema, "files.element.extension")
   def getBasicDataType(
       dtype: DataType,
-      name: String
+      name:  String,
   ): DataType = {
     val names = name.split('.')
     val root = names(0)
@@ -252,8 +259,8 @@ object SparkDataFrameHelpers {
 
   // Get a String column by concatenating multiple columns
   def getFormatString(
-      schema: DataType,
-      colNames: List[String]
+      schema:   DataType,
+      colNames: List[String],
   ): Column = {
     val format = colNames.map(name => getBasicDataType(schema, name) match {
       case StringType => "%s"

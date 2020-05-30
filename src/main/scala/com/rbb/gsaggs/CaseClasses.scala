@@ -5,7 +5,7 @@ import org.apache.spark.sql.Column
 object CaseClasses {
   case class ColChanges(
       oldCol:  Column,
-      newCols: Seq[NewCol]
+      newCols: Seq[NewCol],
   )
 
   case class FreqSketch(
@@ -13,18 +13,18 @@ object CaseClasses {
       freq_05: Long,
       freq_95: Long,
       percent: Double,
-      value:   String
+      value:   String,
   )
 
   case class Histogram(
       centroid: Double,
       count:    Int,
-      sum:      Double
+      sum:      Double,
   )
 
   case class HistogramAndPercentiles(
-      buckets: Array[Histogram],
-      iqr:     Double,
+      buckets:       Array[Histogram],
+      iqr:           Double,
       // Whiskers are calculated using the typical iqr *1.5 method:
       // http://mathworld.wolfram.com/Box-and-WhiskerPlot.html (first method descriped on this page.)
       lower_whisker: Double,
@@ -33,12 +33,12 @@ object CaseClasses {
       percentile_25: Double,
       percentile_75: Double,
       percentile_95: Double,
-      upper_whisker: Double
+      upper_whisker: Double,
   )
 
   case class HistogramAndStats(
       buckets: Array[Histogram],
-      stats:   Stats
+      stats:   Stats,
   )
 
   case class IntermediateStddevStats(
@@ -47,12 +47,12 @@ object CaseClasses {
       max:   Double,
       mean:  Double,
       min:   Option[Double],
-      sum:   Double
+      sum:   Double,
   )
 
   case class NewCol(
       name: String,
-      col:  Column
+      col:  Column,
   )
 
   case class SimScore(
@@ -60,12 +60,12 @@ object CaseClasses {
       geo_mean_score:      Double,
       jaro_score:          Double,
       ngram_score:         Double,
-      overlap_score:       Double
+      overlap_score:       Double,
   )
 
   case class Stats(
-      count: Long,
-      iqr:   Double,
+      count:         Long,
+      iqr:           Double,
       // Whiskers are calculated using the typical iqr *1.5 method:
       // http://mathworld.wolfram.com/Box-and-WhiskerPlot.html (first method descriped on this page.)
       lower_whisker: Double,
@@ -78,7 +78,7 @@ object CaseClasses {
       percentile_75: Double,
       percentile_95: Double,
       sum:           Double,
-      upper_whisker: Double
+      upper_whisker: Double,
   )
 
   case class StddevStats(
@@ -88,7 +88,7 @@ object CaseClasses {
       mean:    Double,
       min:     Double,
       stddev:  Double,
-      sum:     Double
+      sum:     Double,
   )
 
   case class Table(
@@ -100,7 +100,7 @@ object CaseClasses {
       partition_by:     List[String],
       storage_type:     String       = "PARQUET",
       table_name:       String,
-      write_mode:       String       = "append"
+      write_mode:       String       = "append",
   )
 
   case class TimeseriesHistogramAndStats(
@@ -110,6 +110,6 @@ object CaseClasses {
 
   case class TimeRange(
       is_whitelist: Boolean,
-      time_ranges:  Set[String]
+      time_ranges:  Set[String],
   )
 }

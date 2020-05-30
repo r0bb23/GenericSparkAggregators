@@ -10,7 +10,7 @@ import scala.math
 object StreamingStatsUDFS {
   def mergeStddevStats(
       stddevStats1: IntermediateStddevStats,
-      stddevStats2: IntermediateStddevStats
+      stddevStats2: IntermediateStddevStats,
   ): IntermediateStddevStats = {
     val newCount = stddevStats1.count + stddevStats2.count
     val newSum = stddevStats1.sum + stddevStats2.sum
@@ -41,7 +41,7 @@ object StreamingStatsUDFS {
   }
 
   def stddevStatsClass(
-      stats: IntermediateStddevStats
+      stats: IntermediateStddevStats,
   ): StddevStats = {
     val stddev = math.sqrt(stats.m2 / (stats.count - 1.0))
 

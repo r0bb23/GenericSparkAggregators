@@ -14,11 +14,12 @@ import org.apache.spark.sql.{
   Row
 }
 import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
 
 object DistinctSketchAggs extends Serializable {
   val defaultLogK = 10
 
-  case class toHLL(
+  class ToHLL[Type: ClassTag](
       colName: String,
       logK:    Int = defaultLogK,
   ) extends Aggregator[
@@ -26,6 +27,7 @@ object DistinctSketchAggs extends Serializable {
       HllSketch,
       Array[Byte],
   ] with Serializable {
+
     def zero: HllSketch = {
       new HllSketch(logK)
     }
@@ -34,8 +36,17 @@ object DistinctSketchAggs extends Serializable {
         hll: HllSketch,
         row: Row,
     ): HllSketch = {
-      val value = getNestedRowValue[String](row, colName).getOrElse(None)
-      hll.update(value.asInstanceOf[String])
+      val value = getNestedRowValue[Type](row, colName).getOrElse(None)
+      value match {
+        case string:    String      => hll.update(value.asInstanceOf[String])
+        case long:      Long        => hll.update(value.asInstanceOf[Long])
+        case double:    Double      => hll.update(value.asInstanceOf[Double])
+        case arrayByte: Array[Byte] => hll.update(value.asInstanceOf[Array[Byte]])
+        case arrayChar: Array[Char] => hll.update(value.asInstanceOf[Array[Char]])
+        case arrayLong: Array[Long] => hll.update(value.asInstanceOf[Array[Long]])
+        case arrayInt:  Array[Int]  => hll.update(value.asInstanceOf[Int])
+      }
+
       hll
     }
 
@@ -64,10 +75,14 @@ object DistinctSketchAggs extends Serializable {
     }
   }
 
-  case class mergeHLLs(
+  case class MergeHLLs(
       colName: String,
       logK:    Int = defaultLogK,
-  ) extends Aggregator[Row, HllSketch, Array[Byte]] with Serializable {
+  ) extends Aggregator[
+      Row,
+      HllSketch,
+      Array[Byte]
+  ] with Serializable {
     def zero: HllSketch = {
       new HllSketch(logK)
     }

@@ -2,35 +2,35 @@ package com.rbb.gsaggs
 
 object Exceptions {
   case class NotValidType(
-    message: String
+    message: String,
   ) extends Exception(message)
 
   case class DatasetWriteError(
-    message: String
+    message: String,
   ) extends Exception(message)
 
   case class NotValidValue(
-    message: String
+    message: String,
   ) extends Exception(message)
 
   case class NotRegisteredFunction(
-    func: String
+    func: String,
   ) extends Exception(s"No registered function named: $func.")
 
   case class NotRegisteredTransformer(
-    transformer: String
+    transformer: String,
   ) extends Exception(s"No registered transformer named: $transformer.")
 
   case class MissingArguments(
     who:  String,
-    args: String
+    args: String,
   ) extends Exception(s"$who missing arguments: $args.")
 
   case class InvalidColumnName(
-    cols: String
+    cols: String,
   ) extends Exception(s"Invalid column names :$cols.")
 
   case class MutuallyExclusiveParameters(
-    parameters: List[String]
+    parameters: List[String],
   ) extends Exception(s"More than one of the following parameters was set: ${parameters.mkString(", ")}. Only one can be set at a time.")
 }

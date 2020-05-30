@@ -5,7 +5,7 @@ import com.rbb.gsaggs.Exceptions.NotValidValue
 import com.rbb.gsaggs.SparkDataFrameHelpers.getNestedRowValue
 import com.tdunning.math.stats.{
   MergingDigest,
-  TDigest
+  TDigest,
 }
 import com.rbb.gsaggs.udfs.TDigestUDFS
 import java.nio.ByteBuffer
@@ -16,22 +16,26 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{
   Encoder,
   Encoders,
-  Row
+  Row,
 }
 import scala.collection.JavaConversions._
 
 object TDigestAggs {
   case class toTDigest(
       colName: String,
-      nSteps: Option[Long] = None
-  ) extends Aggregator[Row, TDigest, Array[Byte]] with Serializable {
+      nSteps:  Option[Long] = None,
+  ) extends Aggregator[
+      Row,
+      TDigest,
+      Array[Byte]
+  ] with Serializable {
     def zero: TDigest = {
       TDigest.createMergingDigest(100)
     }
 
     def reduce(
         tDigest: TDigest,
-        row: Row
+        row:     Row,
     ): TDigest = {
       val value = getNestedRowValue[Number](row, colName).getOrElse(-99.00)
       tDigest.add(value.asInstanceOf[Number].doubleValue)
@@ -40,14 +44,14 @@ object TDigestAggs {
 
     def merge(
         tDigest1: TDigest,
-        tDigest2: TDigest
+        tDigest2: TDigest,
     ): TDigest = {
       tDigest1.add(tDigest2)
       tDigest1
     }
 
     def finish(
-        tDigest: TDigest
+        tDigest: TDigest,
     ): Array[Byte] = {
       if (nSteps.isEmpty || tDigest.size == nSteps.get) {
         // no-op
@@ -72,7 +76,7 @@ object TDigestAggs {
 
   case class toPercentiles(
       colName: String,
-      nSteps: Option[Long] = None
+      nSteps:  Option[Long] = None,
   ) extends Aggregator[Row, TDigest, HistogramAndPercentiles] with Serializable {
     def zero: TDigest = {
       TDigest.createMergingDigest(100)
@@ -80,7 +84,7 @@ object TDigestAggs {
 
     def reduce(
         tDigest: TDigest,
-        row: Row
+        row:     Row,
     ): TDigest = {
       val value = getNestedRowValue[Number](row, colName).getOrElse(-99.00)
       tDigest.add(value.asInstanceOf[Number].doubleValue)
@@ -89,14 +93,14 @@ object TDigestAggs {
 
     def merge(
         tDigest1: TDigest,
-        tDigest2: TDigest
+        tDigest2: TDigest,
     ): TDigest = {
       tDigest1.add(tDigest2)
       tDigest1
     }
 
     def finish(
-        tDigest: TDigest
+        tDigest: TDigest,
     ): HistogramAndPercentiles = {
       if (nSteps.isEmpty || tDigest.size == nSteps.get) {
         // no-op
@@ -119,7 +123,7 @@ object TDigestAggs {
   }
 
   case class mergeTDigests(
-      colName: String
+      colName: String,
   ) extends Aggregator[Row, TDigest, Array[Byte]] with Serializable {
     def zero: TDigest = {
       TDigest.createMergingDigest(100)
@@ -127,7 +131,7 @@ object TDigestAggs {
 
     def reduce(
         tDigestCurrent: TDigest,
-        row: Row
+        row:            Row,
     ): TDigest = {
       val tDigestArray = getNestedRowValue[Array[Byte]](row, colName)
       if (tDigestArray.isDefined) {
@@ -141,14 +145,14 @@ object TDigestAggs {
 
     def merge(
         tDigest1: TDigest,
-        tDigest2: TDigest
+        tDigest2: TDigest,
     ): TDigest = {
       tDigest1.add(tDigest2)
       tDigest1
     }
 
     def finish(
-        tDigest: TDigest
+        tDigest: TDigest,
     ): Array[Byte] = {
       val buffer = ByteBuffer.allocate(tDigest.smallByteSize())
       tDigest.asSmallBytes(buffer)

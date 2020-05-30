@@ -16,12 +16,12 @@ object FreqSketchUDFS {
 
   def freqEuclidDist(
       freqModelBinary: Array[Byte],
-      freqTestBinary: Array[Byte]
+      freqTestBinary:  Array[Byte],
   ): Double = {
     def calcEuclidDist(
         freqMerged: ItemsSketch[String],
-        freqModel: ItemsSketch[String],
-        freqTest: ItemsSketch[String]
+        freqModel:  ItemsSketch[String],
+        freqTest:   ItemsSketch[String],
     ): Double = {
       val freqModelItems = freqModel.getFrequentItems(errorType)
       val freqTestItems = freqTest.getFrequentItems(errorType)
@@ -53,7 +53,7 @@ object FreqSketchUDFS {
   val freqEuclidDistUdf = udf((freqModelBinary: Array[Byte], freqTestBinary: Array[Byte]) => freqEuclidDist(freqModelBinary, freqTestBinary))
 
   def freqSketchToFreqSketch(
-      freq: ItemsSketch[String]
+      freq: ItemsSketch[String],
   ): List[FreqSketch] = {
     val freqItems = freq.getFrequentItems(errorType)
     val freqEstimatesSum = freqItems.foldLeft(0L) {
@@ -75,7 +75,7 @@ object FreqSketchUDFS {
   }
 
   def freqSketchArrayToFreqSketch(
-      freqArray: Array[Byte]
+      freqArray: Array[Byte],
   ): List[FreqSketch] = {
     val freq = ItemsSketch.getInstance(Memory.wrap(freqArray), new ArrayOfStringsSerDe())
     freqSketchToFreqSketch(freq)

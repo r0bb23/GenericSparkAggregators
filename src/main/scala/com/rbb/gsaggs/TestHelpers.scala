@@ -91,7 +91,7 @@ object ResourceHelpers {
   }
 
   def readCSVResourceAsDataFrame(
-      file: String,
+      file:   String,
       header: String = "true",
   )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$file").toString
@@ -103,8 +103,8 @@ object ResourceHelpers {
     * Read from a parquet file and apply the schema
     */
   def readParquetResourceAsDataFrame(
-      dataFile: String,
-      schemaJsonFile: String = null,
+      dataFile:        String,
+      schemaJsonFile:  String = null,
       compressionType: String = "snappy",
   )(implicit ss: SparkSession): Dataset[Row] = {
     val urlPath = this.getClass.getResource(s"/$dataFile").toString
@@ -190,10 +190,13 @@ object Utils {
     * Our version combined the functionality of createDirectory w/o retries
     */
   def createTempDir(
-      root: String = System.getProperty("java.io.tmpdir"),
+      root:       String = System.getProperty("java.io.tmpdir"),
       namePrefix: String = "test-spark",
   ): File = {
-    val dir = new File(root, namePrefix + "-" + UUID.randomUUID.toString)
+    val dir = new File(
+      root,
+      namePrefix + "-" + UUID.randomUUID.toString,
+    )
     dir.getCanonicalFile
   }
 
@@ -294,7 +297,7 @@ object Utils {
   // Need to cast to java predicate otherwise we run into issues here.  This same thing works in with scala 2.12 w/o the cast.
   // Note that this also doesn't take a filesystem, so doesn't work for HDFS.
   def getMatchingFiles(
-      basedir: Path,
+      basedir:  Path,
       filterFn: (Path) => Boolean,
   ): List[Path] = {
     Files.walk(basedir.normalize)
@@ -338,30 +341,33 @@ object TestHelpers {
 
   def randGauss(
       sampleSize: Int = 50,
-      mu: Int = 0,
-      sigma: Int = 1,
-      seed: Int = 1234
+      mu:         Int = 0,
+      sigma:      Int = 1,
+      seed:       Int = 1234,
   ): Seq[Double] = {
     new Gaussian(mu, sigma)(RandBasis.withSeed(seed)).sample(sampleSize).toSeq
   }
 
   def randBeta(
-      sampleSize: Int = 50,
-      alpha: Double = 2.0,
-      beta: Double = 2.0,
-      seed: Int = 1234,
+      sampleSize: Int    = 50,
+      alpha:      Double = 2.0,
+      beta:       Double = 2.0,
+      seed:       Int    = 1234,
   ): Seq[Double] = {
     new Beta(alpha, beta)(RandBasis.withSeed(seed)).sample(sampleSize).toSeq
   }
 
   def randFreqBeta(
-      strings: List[String],
-      sampleSize: Int = 50,
-      alpha: Double = 2.0,
-      beta: Double = 2.0,
-      seed: Int = 1234,
+      strings:    List[String],
+      sampleSize: Int    = 50,
+      alpha:      Double = 2.0,
+      beta:       Double = 2.0,
+      seed:       Int    = 1234,
   ): Seq[String] = {
-    val betaSeq = randBeta(sampleSize = sampleSize, seed = seed)
+    val betaSeq = randBeta(
+      sampleSize = sampleSize,
+      seed = seed,
+    )
 
     betaSeq.map(x => strings(math.floor(x * strings.length).toInt))
   }

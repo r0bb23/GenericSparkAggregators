@@ -14,7 +14,7 @@ object ScalaHelpers {
   val logger = LoggerFactory.getLogger(this.getClass.getName)
 
   def objectToByteArray[ObjType](
-      obj: ObjType
+      obj: ObjType,
   ): Array[Byte] = {
     val byteArrayStream = new ByteArrayOutputStream()
     val outputObj = new ObjectOutputStream(byteArrayStream)
@@ -23,7 +23,7 @@ object ScalaHelpers {
   }
 
   def byteArrayToObject[BytesType](
-      bytes: Array[Byte]
+      bytes: Array[Byte],
   ): BytesType = {
     val byteArrayStream = new ByteArrayInputStream(bytes)
     val inputObj = new ObjectInputStream(byteArrayStream)
@@ -31,7 +31,7 @@ object ScalaHelpers {
   }
 
   def toListString(
-      listAny: List[Any]
+      listAny: List[Any],
   ): List[String] = {
     listAny.map(_.toString).toList
   }
